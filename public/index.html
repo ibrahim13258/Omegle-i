@@ -1,0 +1,523 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instronova - Social Media Platform</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-logo">
+            <h1>Instronova</h1>
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="logo">
+                    <h1>Instronova</h1>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="input-group">
+                        <input type="text" id="loginEmail" placeholder="Email or Username" required>
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="loginPassword" placeholder="Password" required>
+                        <i class="fas fa-lock"></i>
+                        <i class="fas fa-eye toggle-password" onclick="togglePassword('loginPassword')"></i>
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <span>Login</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+                <div class="login-links">
+                    <a href="#" onclick="openForgotPasswordModal()">Forgot Password?</a>
+                    <p>Don't have an account? <a href="#" onclick="showPage('signupPage')">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Page -->
+    <div id="signupPage" class="page">
+        <div class="signup-container">
+            <div class="signup-card">
+                <div class="logo">
+                    <h1>Instronova</h1>
+                    <p>Join our community</p>
+                </div>
+                <form id="signupForm" class="signup-form">
+                    <div class="input-group">
+                        <input type="text" id="signupName" placeholder="Full Name" required>
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="signupUsername" placeholder="Username" required>
+                        <i class="fas fa-at"></i>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" id="signupEmail" placeholder="Email" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="input-group">
+                        <input type="tel" id="signupPhone" placeholder="Phone Number" required>
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="signupPassword" placeholder="Password" required>
+                        <i class="fas fa-lock"></i>
+                        <i class="fas fa-eye toggle-password" onclick="togglePassword('signupPassword')"></i>
+                    </div>
+                    <button type="submit" class="signup-btn">
+                        <span>Next</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+                <div class="signup-links">
+                    <p>Already have an account? <a href="#" onclick="showPage('loginPage')">Log in</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Setup Page -->
+    <div id="profileSetupPage" class="page">
+        <div class="profile-setup-container">
+            <div class="profile-setup-card">
+                <div class="step-tracker">
+                    <span>Step 2 of 2 — Complete your Profile</span>
+                </div>
+                <div class="profile-picture-section">
+                    <div class="profile-picture-container">
+                        <img id="profilePreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23ddd'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23999' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
+                        <button class="upload-btn" onclick="document.getElementById('profilePictureInput').click()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="previewProfilePicture(this)">
+                </div>
+                <form id="profileSetupForm" class="profile-setup-form">
+                    <div class="input-group">
+                        <input type="text" id="profileName" placeholder="Full Name" readonly>
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="profileUsername" placeholder="Username" readonly>
+                        <i class="fas fa-at"></i>
+                    </div>
+                    <div class="input-group">
+                        <textarea id="profileBio" placeholder="Bio (max 150 characters)" maxlength="150"></textarea>
+                        <span class="char-count">0/150</span>
+                    </div>
+                    <div class="input-group">
+                        <select id="profileGender">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <i class="fas fa-venus-mars"></i>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="skip-btn" onclick="showPage('homePage')">Skip for now</button>
+                        <button type="submit" class="complete-btn">
+                            <span>Complete Profile</span>
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home Page -->
+    <div id="homePage" class="page">
+        <header class="main-header">
+            <div class="logo">
+                <h1>Instronova</h1>
+            </div>
+            <div class="header-icons">
+                <i class="fas fa-bell notification-icon" onclick="openNotifications()"></i>
+                <i class="fas fa-paper-plane message-icon" onclick="showPage('messagesPage')"></i>
+            </div>
+        </header>
+
+        <div class="stories-section">
+            <div class="stories-container">
+                <div class="story add-story" onclick="openCreateStory()">
+                    <div class="story-avatar">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <span>Your Story</span>
+                </div>
+                <div class="story" onclick="openStoryViewer(1)">
+                    <div class="story-avatar">
+                        <img src="https://picsum.photos/60/60?random=1" alt="User 1">
+                    </div>
+                    <span>john_doe</span>
+                </div>
+                <div class="story" onclick="openStoryViewer(2)">
+                    <div class="story-avatar">
+                        <img src="https://picsum.photos/60/60?random=2" alt="User 2">
+                    </div>
+                    <span>jane_smith</span>
+                </div>
+                <div class="story" onclick="openStoryViewer(3)">
+                    <div class="story-avatar">
+                        <img src="https://picsum.photos/60/60?random=3" alt="User 3">
+                    </div>
+                    <span>mike_wilson</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="posts-section" id="postsContainer">
+            <!-- Posts will be dynamically loaded -->
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="showPage('homePage')">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="nav-item" onclick="showPage('searchPage')">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="nav-item" onclick="openCreatePost()">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="nav-item" onclick="showPage('reelsPage')">
+                <i class="fas fa-play"></i>
+            </div>
+            <div class="nav-item" onclick="showPage('profilePage')">
+                <i class="fas fa-user"></i>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Search Page -->
+    <div id="searchPage" class="page">
+        <header class="search-header">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search users, posts, tags..." onkeyup="performSearch()">
+                <i class="fas fa-search"></i>
+            </div>
+        </header>
+        <div class="search-filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="users">Users</button>
+            <button class="filter-btn" data-filter="posts">Posts</button>
+            <button class="filter-btn" data-filter="hashtags">Hashtags</button>
+        </div>
+        <div class="search-results" id="searchResults">
+            <div class="trending-section">
+                <h3>Trending Posts</h3>
+                <div class="trending-grid" id="trendingGrid">
+                    <!-- Trending posts will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Page -->
+    <div id="messagesPage" class="page">
+        <header class="messages-header">
+            <div class="messages-title">
+                <h2>Messages</h2>
+            </div>
+            <i class="fas fa-edit new-message-icon" onclick="openNewMessage()"></i>
+        </header>
+        <div class="messages-search">
+            <input type="text" placeholder="Search username..." id="messageSearch">
+        </div>
+        <div class="chats-list" id="chatsList">
+            <!-- Chat list will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Reels Page -->
+    <div id="reelsPage" class="page">
+        <div class="reels-container" id="reelsContainer">
+            <!-- Reels will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Profile Page -->
+    <div id="profilePage" class="page">
+        <header class="profile-header">
+            <div class="profile-header-left">
+                <i class="fas fa-cog settings-icon" onclick="showPage('settingsPage')"></i>
+            </div>
+            <div class="profile-header-center">
+                <span id="profileHeaderUsername">username</span>
+            </div>
+            <div class="profile-header-right">
+                <i class="fas fa-share-alt share-profile-icon" onclick="shareProfile()"></i>
+            </div>
+        </header>
+        
+        <div class="profile-info">
+            <div class="profile-picture-large">
+                <img id="profilePictureLarge" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23ddd'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23999' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
+            </div>
+            <div class="profile-stats">
+                <div class="stat">
+                    <span class="stat-number" id="postsCount">0</span>
+                    <span class="stat-label">Posts</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="followersCount">0</span>
+                    <span class="stat-label">Followers</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="followingCount">0</span>
+                    <span class="stat-label">Following</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="profile-bio">
+            <h3 id="profileDisplayName">Full Name</h3>
+            <p id="profileBioText">Bio will appear here...</p>
+        </div>
+        
+        <div class="profile-actions">
+            <button class="edit-profile-btn" onclick="editProfile()">Edit Profile</button>
+        </div>
+        
+        <div class="profile-tabs">
+            <div class="tab active" data-tab="posts">
+                <i class="fas fa-th"></i>
+            </div>
+            <div class="tab" data-tab="reels">
+                <i class="fas fa-play"></i>
+            </div>
+            <div class="tab" data-tab="tagged">
+                <i class="fas fa-user-tag"></i>
+            </div>
+        </div>
+        
+        <div class="profile-content" id="profileContent">
+            <!-- Profile content will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="settingsPage" class="page">
+        <header class="settings-header">
+            <i class="fas fa-arrow-left back-btn" onclick="showPage('profilePage')"></i>
+            <h2>Settings</h2>
+        </header>
+        <div class="settings-content">
+            <div class="settings-section">
+                <h3>Account</h3>
+                <div class="setting-item" onclick="editProfile()">
+                    <i class="fas fa-user"></i>
+                    <span>Edit Profile</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="setting-item" onclick="changePassword()">
+                    <i class="fas fa-lock"></i>
+                    <span>Change Password</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="setting-item">
+                    <i class="fas fa-user-lock"></i>
+                    <span>Private Account</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="privateAccountToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Privacy</h3>
+                <div class="setting-item">
+                    <i class="fas fa-eye"></i>
+                    <span>Show Activity Status</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="activityStatusToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>Allow Message Requests</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="messageRequestsToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Notifications</h3>
+                <div class="setting-item">
+                    <i class="fas fa-bell"></i>
+                    <span>Push Notifications</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="pushNotificationsToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>General</h3>
+                <div class="setting-item">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark Mode</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="darkModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section danger">
+                <h3>Account Actions</h3>
+                <div class="setting-item" onclick="deactivateAccount()">
+                    <i class="fas fa-user-slash"></i>
+                    <span>Deactivate Account</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="setting-item" onclick="deleteAccount()">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete Account</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+            </div>
+            <form id="forgotPasswordForm">
+                <div class="input-group">
+                    <input type="email" id="forgotEmail" placeholder="Enter your email" required>
+                </div>
+                <button type="submit" class="modal-btn">Send OTP</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- OTP Modal -->
+    <div id="otpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Enter OTP</h3>
+                <span class="close" onclick="closeOtpModal()">&times;</span>
+            </div>
+            <p>OTP expires in <span id="otpTimer">30</span> seconds</p>
+            <form id="otpForm">
+                <div class="otp-inputs">
+                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 0)">
+                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 1)">
+                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 2)">
+                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 3)">
+                </div>
+                <button type="submit" class="modal-btn">Verify OTP</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Post Modal -->
+    <div id="createPostModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Create New Post</h3>
+                <span class="close" onclick="closeCreatePostModal()">&times;</span>
+            </div>
+            <div class="create-post-options">
+                <div class="post-option" onclick="selectPostType('post')">
+                    <i class="fas fa-image"></i>
+                    <span>Post</span>
+                    <p>Share photos and videos to your feed</p>
+                </div>
+                <div class="post-option" onclick="selectPostType('reel')">
+                    <i class="fas fa-video"></i>
+                    <span>Reel</span>
+                    <p>Create short vertical videos</p>
+                </div>
+                <div class="post-option" onclick="selectPostType('story')">
+                    <i class="fas fa-circle"></i>
+                    <span>Story</span>
+                    <p>Share temporary photos and videos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Story Viewer Modal -->
+    <div id="storyViewerModal" class="modal fullscreen">
+        <div class="story-viewer">
+            <div class="story-header">
+                <div class="story-user-info">
+                    <img id="storyUserAvatar" src="" alt="User Avatar">
+                    <span id="storyUsername">username</span>
+                    <span id="storyTime">2h</span>
+                </div>
+                <span class="close" onclick="closeStoryViewer()">&times;</span>
+            </div>
+            <div class="story-progress">
+                <div class="progress-bar"></div>
+            </div>
+            <div class="story-content">
+                <img id="storyImage" src="" alt="Story">
+            </div>
+            <div class="story-navigation">
+                <div class="story-nav-left" onclick="previousStory()"></div>
+                <div class="story-nav-right" onclick="nextStory()"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="modal fullscreen">
+        <div class="chat-window">
+            <div class="chat-header">
+                <i class="fas fa-arrow-left back-btn" onclick="closeChatModal()"></i>
+                <div class="chat-user-info">
+                    <img id="chatUserAvatar" src="" alt="User Avatar">
+                    <div class="chat-user-details">
+                        <span id="chatUsername">username</span>
+                        <span id="chatUserStatus">Active now</span>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <i class="fas fa-phone"></i>
+                    <i class="fas fa-video"></i>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be loaded here -->
+            </div>
+            <div class="chat-input">
+                <i class="fas fa-smile emoji-btn"></i>
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <i class="fas fa-camera camera-btn"></i>
+                <i class="fas fa-microphone mic-btn"></i>
+                <i class="fas fa-paper-plane send-btn" onclick="sendMessage()"></i>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
