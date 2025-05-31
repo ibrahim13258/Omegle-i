@@ -1,623 +1,394 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instronova - Social Media Platform</title>
+    <title>Omegle - Talk to strangers!</title>
+    <link href="https://unpkg.com/lucide@latest/dist/lucide.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Additional styles for the enhanced video controls */
+        .video-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50px;
+            margin: 10px auto;
+            max-width: 400px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .control-btn:hover {
+            background: #555;
+            transform: scale(1.1);
+        }
+
+        .control-btn.active {
+            background: #f44336;
+        }
+
+        .control-btn i {
+            font-size: 20px;
+        }
+
+        .end-call {
+            background: #f44336;
+        }
+
+        .end-call:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .control-btn:hover .tooltip {
+            opacity: 1;
+        }
+
+        .attach-btn {
+            position: relative;
+        }
+
+        .attach-btn:hover::after {
+            content: "Attach file";
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            .video-controls {
+                gap: 15px;
+                padding: 10px;
+            }
+            
+            .control-btn {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
-        <div class="loading-logo">
-            <h1>Instronova</h1>
-            <div class="loading-spinner"></div>
-        </div>
-    </div>
-
-    <!-- Login Page -->
-    <div id="loginPage" class="page active">
-        <div class="login-container">
-            <div class="login-card">
-                <div class="logo">
-                    <h1>Instronova</h1>
-                </div>
-                <form id="loginForm" class="login-form">
-                    <div class="input-group">
-                        <input type="text" id="loginEmail" placeholder="Email or Username" required>
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="password" id="loginPassword" placeholder="Password" required>
-                        <i class="fas fa-lock"></i>
-                        <i class="fas fa-eye toggle-password" onclick="togglePassword('loginPassword')"></i>
-                    </div>
-                    <button type="submit" class="login-btn">
-                        <span>Login</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </form>
-                <div class="login-links">
-                    <a href="#" onclick="openForgotPasswordModal()">Forgot Password?</a>
-                    <p>Don't have an account? <a href="#" onclick="showPage('signupPage')">Sign up</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Multi-Step Signup Page -->
-    <div id="signupPage" class="page">
-        <div class="signup-container">
-            <div class="signup-card">
-                <div class="logo">
-                    <h1>Instronova</h1>
-                    <p>Join our community</p>
-                </div>
-                
-                <!-- Progress Indicator -->
-                <div class="progress-indicator">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="step-indicators">
-                        <div class="step active" data-step="1">
-                            <span>1</span>
-                            <label>Name</label>
-                        </div>
-                        <div class="step" data-step="2">
-                            <span>2</span>
-                            <label>Username</label>
-                        </div>
-                        <div class="step" data-step="3">
-                            <span>3</span>
-                            <label>Email</label>
-                        </div>
-                        <div class="step" data-step="4">
-                            <span>4</span>
-                            <label>Phone</label>
-                        </div>
-                        <div class="step" data-step="5">
-                            <span>5</span>
-                            <label>Password</label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Multi-Step Form -->
-                <div class="multi-step-form">
-                    <!-- Step 1: Full Name -->
-                    <div class="form-step active" data-step="1">
-                        <h3>What's your full name?</h3>
-                        <div class="input-group">
-                            <input type="text" id="stepName" placeholder="Enter your full name" required>
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="step-buttons">
-                            <button type="button" class="next-btn" onclick="nextStep(1)">
-                                <span>Next</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 2: Username -->
-                    <div class="form-step" data-step="2">
-                        <h3>Choose a username</h3>
-                        <p class="step-description">Only lowercase letters, numbers, and underscores allowed</p>
-                        <div class="input-group">
-                            <input type="text" id="stepUsername" placeholder="username" required>
-                            <i class="fas fa-at"></i>
-                            <div class="validation-icon" id="usernameValidation"></div>
-                        </div>
-                        <div class="error-message" id="usernameError"></div>
-                        <div class="step-buttons">
-                            <button type="button" class="back-btn" onclick="previousStep(2)">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>Back</span>
-                            </button>
-                            <button type="button" class="next-btn" onclick="nextStep(2)" disabled>
-                                <span>Next</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Email -->
-                    <div class="form-step" data-step="3">
-                        <h3>What's your email?</h3>
-                        <p class="step-description">We'll use this to send you important updates</p>
-                        <div class="input-group">
-                            <input type="email" id="stepEmail" placeholder="Enter your email">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <div class="step-buttons">
-                            <button type="button" class="back-btn" onclick="previousStep(3)">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>Back</span>
-                            </button>
-                            <button type="button" class="skip-btn" onclick="skipStep(3)">Skip</button>
-                            <button type="button" class="next-btn" onclick="nextStep(3)">
-                                <span>Next</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 4: Mobile Number -->
-                    <div class="form-step" data-step="4">
-                        <h3>Verify your phone number</h3>
-                        <p class="step-description">We'll send you an OTP to verify your number</p>
-                        <div class="input-group">
-                            <input type="tel" id="stepPhone" placeholder="Enter your mobile number" required>
-                            <i class="fas fa-phone"></i>
-                        </div>
-                        <div class="otp-section" id="otpSection" style="display: none;">
-                            <div class="input-group">
-                                <input type="text" id="stepOTP" placeholder="Enter 6-digit OTP" maxlength="6">
-                                <i class="fas fa-shield-alt"></i>
-                            </div>
-                            <div class="otp-timer">
-                                OTP expires in <span id="otpTimer">60:00</span>
-                                <button type="button" class="resend-btn" id="resendOTP" onclick="resendOTP()" disabled>Resend OTP</button>
-                            </div>
-                        </div>
-                        <div class="error-message" id="phoneError"></div>
-                        <div class="step-buttons">
-                            <button type="button" class="back-btn" onclick="previousStep(4)">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>Back</span>
-                            </button>
-                            <button type="button" class="next-btn" id="phoneNextBtn" onclick="sendOTP()">
-                                <span>Send OTP</span>
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Step 5: Password -->
-                    <div class="form-step" data-step="5">
-                        <h3>Create a password</h3>
-                        <p class="step-description">Choose a strong password with at least 6 characters</p>
-                        <div class="input-group">
-                            <input type="password" id="stepPassword" placeholder="Create password" required>
-                            <i class="fas fa-lock"></i>
-                            <i class="fas fa-eye toggle-password" onclick="togglePassword('stepPassword')"></i>
-                        </div>
-                        <div class="password-strength" id="passwordStrength"></div>
-                        <div class="step-buttons">
-                            <button type="button" class="back-btn" onclick="previousStep(5)">
-                                <i class="fas fa-arrow-left"></i>
-                                <span>Back</span>
-                            </button>
-                            <button type="button" class="finish-btn" onclick="completeSignup()">
-                                <span>Finish Signup</span>
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="signup-links">
-                    <p>Already have an account? <a href="#" onclick="showPage('loginPage')">Log in</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Setup Page -->
-    <div id="profileSetupPage" class="page">
-        <div class="profile-setup-container">
-            <div class="profile-setup-card">
-                <div class="step-tracker">
-                    <span>Step 2 of 2 — Complete your Profile</span>
-                </div>
-                <div class="profile-picture-section">
-                    <div class="profile-picture-container">
-                        <img id="profilePreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23ddd'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23999' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
-                        <button class="upload-btn" onclick="document.getElementById('profilePictureInput').click()">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                    </div>
-                    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="previewProfilePicture(this)">
-                </div>
-                <form id="profileSetupForm" class="profile-setup-form">
-                    <div class="input-group">
-                        <input type="text" id="profileName" placeholder="Full Name" readonly>
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="profileUsername" placeholder="Username" readonly>
-                        <i class="fas fa-at"></i>
-                    </div>
-                    <div class="input-group">
-                        <textarea id="profileBio" placeholder="Bio (max 150 characters)" maxlength="150"></textarea>
-                        <span class="char-count">0/150</span>
-                    </div>
-                    <div class="input-group">
-                        <select id="profileGender">
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <i class="fas fa-venus-mars"></i>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="skip-btn" onclick="showPage('homePage')">Skip for now</button>
-                        <button type="submit" class="complete-btn">
-                            <span>Complete Profile</span>
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Home Page -->
-    <div id="homePage" class="page">
-        <header class="main-header">
+    <div id="homePage" class="page active">
+        <div class="container">
             <div class="logo">
-                <h1>Instronova</h1>
-            </div>
-            <div class="header-icons">
-                <i class="fas fa-bell notification-icon" onclick="openNotifications()"></i>
-                <i class="fas fa-paper-plane message-icon" onclick="showPage('messagesPage')"></i>
-            </div>
-        </header>
-
-        <div class="stories-section">
-            <div class="stories-container">
-                <div class="story add-story" onclick="openCreateStory()">
-                    <div class="story-avatar">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <span>Your Story</span>
-                </div>
-                <div class="story" onclick="openStoryViewer(1)">
-                    <div class="story-avatar">
-                        <img src="https://picsum.photos/60/60?random=1" alt="User 1">
-                    </div>
-                    <span>john_doe</span>
-                </div>
-                <div class="story" onclick="openStoryViewer(2)">
-                    <div class="story-avatar">
-                        <img src="https://picsum.photos/60/60?random=2" alt="User 2">
-                    </div>
-                    <span>jane_smith</span>
-                </div>
-                <div class="story" onclick="openStoryViewer(3)">
-                    <div class="story-avatar">
-                        <img src="https://picsum.photos/60/60?random=3" alt="User 3">
-                    </div>
-                    <span>mike_wilson</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="posts-section" id="postsContainer">
-            <!-- Posts will be dynamically loaded -->
-        </div>
-
-        <nav class="bottom-nav">
-            <div class="nav-item active" onclick="showPage('homePage')">
-                <i class="fas fa-home"></i>
-            </div>
-            <div class="nav-item" onclick="showPage('searchPage')">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="nav-item" onclick="openCreatePost()">
-                <i class="fas fa-plus"></i>
-            </div>
-            <div class="nav-item" onclick="showPage('reelsPage')">
-                <i class="fas fa-play"></i>
-            </div>
-            <div class="nav-item" onclick="showPage('profilePage')">
-                <i class="fas fa-user"></i>
-            </div>
-        </nav>
-    </div>
-
-    <!-- Search Page -->
-    <div id="searchPage" class="page">
-        <header class="search-header">
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search users, posts, tags..." onkeyup="performSearch()">
-                <i class="fas fa-search"></i>
-            </div>
-        </header>
-        <div class="search-filters">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="users">Users</button>
-            <button class="filter-btn" data-filter="posts">Posts</button>
-            <button class="filter-btn" data-filter="hashtags">Hashtags</button>
-        </div>
-        <div class="search-results" id="searchResults">
-            <div class="trending-section">
-                <h3>Trending Posts</h3>
-                <div class="trending-grid" id="trendingGrid">
-                    <!-- Trending posts will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Messages Page -->
-    <div id="messagesPage" class="page">
-        <header class="messages-header">
-            <div class="messages-title">
-                <h2>Messages</h2>
-            </div>
-            <i class="fas fa-edit new-message-icon" onclick="openNewMessage()"></i>
-        </header>
-        <div class="messages-search">
-            <input type="text" placeholder="Search username..." id="messageSearch">
-        </div>
-        <div class="chats-list" id="chatsList">
-            <!-- Chat list will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Reels Page -->
-    <div id="reelsPage" class="page">
-        <div class="reels-container" id="reelsContainer">
-            <!-- Reels will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Profile Page -->
-    <div id="profilePage" class="page">
-        <header class="profile-header">
-            <div class="profile-header-left">
-                <i class="fas fa-cog settings-icon" onclick="showPage('settingsPage')"></i>
-            </div>
-            <div class="profile-header-center">
-                <span id="profileHeaderUsername">username</span>
-            </div>
-            <div class="profile-header-right">
-                <i class="fas fa-share-alt share-profile-icon" onclick="shareProfile()"></i>
-            </div>
-        </header>
-        
-        <div class="profile-info">
-            <div class="profile-picture-large">
-                <img id="profilePictureLarge" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23ddd'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23999' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
-            </div>
-            <div class="profile-stats">
-                <div class="stat">
-                    <span class="stat-number" id="postsCount">0</span>
-                    <span class="stat-label">Posts</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number" id="followersCount">0</span>
-                    <span class="stat-label">Followers</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number" id="followingCount">0</span>
-                    <span class="stat-label">Following</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="profile-bio">
-            <h3 id="profileDisplayName">Full Name</h3>
-            <p id="profileBioText">Bio will appear here...</p>
-        </div>
-        
-        <div class="profile-actions">
-            <button class="edit-profile-btn" onclick="editProfile()">Edit Profile</button>
-        </div>
-        
-        <div class="profile-tabs">
-            <div class="tab active" data-tab="posts">
-                <i class="fas fa-th"></i>
-            </div>
-            <div class="tab" data-tab="reels">
-                <i class="fas fa-play"></i>
-            </div>
-            <div class="tab" data-tab="tagged">
-                <i class="fas fa-user-tag"></i>
-            </div>
-        </div>
-        
-        <div class="profile-content" id="profileContent">
-            <!-- Profile content will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Settings Page -->
-    <div id="settingsPage" class="page">
-        <header class="settings-header">
-            <i class="fas fa-arrow-left back-btn" onclick="showPage('profilePage')"></i>
-            <h2>Settings</h2>
-        </header>
-        <div class="settings-content">
-            <div class="settings-section">
-                <h3>Account</h3>
-                <div class="setting-item" onclick="editProfile()">
-                    <i class="fas fa-user"></i>
-                    <span>Edit Profile</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="setting-item" onclick="changePassword()">
-                    <i class="fas fa-lock"></i>
-                    <span>Change Password</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="setting-item">
-                    <i class="fas fa-user-lock"></i>
-                    <span>Private Account</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="privateAccountToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
+                <span class="logo-icon">💬</span>
+                <span class="logo-text">omegle<span class="com">.com</span></span>
             </div>
             
-            <div class="settings-section">
-                <h3>Privacy</h3>
-                <div class="setting-item">
-                    <i class="fas fa-eye"></i>
-                    <span>Show Activity Status</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="activityStatusToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <i class="fas fa-envelope"></i>
-                    <span>Allow Message Requests</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="messageRequestsToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
+            <h1>Talk to strangers!</h1>
+            
+            <div class="disclaimer">
+                <p>By using Omegle, you accept the terms at the bottom. You must be 18+ or 13+ with parental permission.</p>
+                <p><strong>Mobile video chat is an experimental new feature</strong></p>
+                <p><strong>Video is monitored, so keep it clean!</strong></p>
+                <p>Go to <a href="#" onclick="showAdultWarning()">an adult site</a> instead if that's what you want</p>
             </div>
             
-            <div class="settings-section">
-                <h3>Notifications</h3>
-                <div class="setting-item">
-                    <i class="fas fa-bell"></i>
-                    <span>Push Notifications</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="pushNotificationsToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
+            <div class="main-buttons">
+                <button class="btn btn-primary" onclick="showTermsForChat()">Start a chat</button>
+                <button class="btn btn-secondary" onclick="showTermsForVideo()">Video</button>
             </div>
             
-            <div class="settings-section">
-                <h3>General</h3>
-                <div class="setting-item">
-                    <i class="fas fa-moon"></i>
-                    <span>Dark Mode</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="darkModeToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="settings-section danger">
-                <h3>Account Actions</h3>
-                <div class="setting-item" onclick="deactivateAccount()">
-                    <i class="fas fa-user-slash"></i>
-                    <span>Deactivate Account</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="setting-item" onclick="deleteAccount()">
-                    <i class="fas fa-trash"></i>
-                    <span>Delete Account</span>
-                    <i class="fas fa-chevron-right"></i>
+            <div class="interests-section">
+                <p>Meet strangers with your interests!</p>
+                <input type="text" placeholder="Add your interests (optional)" class="interests-input">
+                <div class="dropdown">
+                    <button class="dropdown-btn">▶ College student chat</button>
+                    <div class="dropdown-content">
+                        <p>Omegle (<em>oh-meg-ull</em>) is a great way to meet new friends, even while social distancing.</p>
+                    </div>
                 </div>
             </div>
         </div>
+        
+        <footer>
+            <p>© 2025 Omegle Random Chat. All rights reserved. | 
+                <a href="#" onclick="showTermsPolicy()">Terms & Conditions</a> | 
+                <a href="#" onclick="showPrivacyPolicy()">Privacy Policy</a> | 
+                <a href="#" onclick="showDMCADisclaimer()">DMCA Disclaimer</a>
+            </p>
+        </footer>
     </div>
 
-    <!-- Modals -->
-    <!-- Forgot Password Modal -->
-    <div id="forgotPasswordModal" class="modal">
+    <!-- Terms Modal -->
+    <div id="termsModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>Reset Password</h3>
-                <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
-            </div>
-            <form id="forgotPasswordForm">
-                <div class="input-group">
-                    <input type="email" id="forgotEmail" placeholder="Enter your email" required>
-                </div>
-                <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 1rem 0;">
-                    We'll send an OTP to your registered phone number
-                </p>
-                <button type="submit" class="modal-btn">Send OTP</button>
-            </form>
+            <h3>Terms and Conditions</h3>
+            <p>By using this website, you agree that any actions you take during your use — including text, audio, photo, video communication — are solely your responsibility. Any illegal, abusive, or inappropriate activity is strictly prohibited. The creator or owner of this website will not be held liable for user actions. In case of any violation of laws, the individual user will be solely responsible and may be reported to authorities if required.</p>
+            <button class="btn btn-primary" onclick="agreeTerms()">Agree</button>
         </div>
     </div>
 
-    <!-- Create Post Modal -->
-    <div id="createPostModal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3>Create New Post</h3>
-                <span class="close" onclick="closeCreatePostModal()">&times;</span>
+    <!-- Chat Interface -->
+    <div id="chatPage" class="page">
+        <div class="chat-header">
+            <h2>Omegle Chat</h2>
+            <div class="connection-status" id="connectionStatus">Connecting...</div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+        </div>
+        
+        <div class="chat-input-section">
+            <div class="typing-indicator" id="typingIndicator"></div>
+            <div class="chat-input-container">
+                <input type="text" id="messageInput" placeholder="Type your message..." class="message-input">
+                <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+                <button onclick="document.getElementById('fileInput').click()" class="attach-btn">
+                    <i data-lucide="paperclip"></i>
+                </button>
+                <button onclick="sendMessage()" class="send-btn">Send</button>
             </div>
-            <div class="create-post-options">
-                <div class="post-option" onclick="selectPostType('post')">
-                    <i class="fas fa-image"></i>
-                    <span>Post</span>
-                    <p>Share photos and videos to your feed</p>
-                </div>
-                <div class="post-option" onclick="selectPostType('reel')">
-                    <i class="fas fa-video"></i>
-                    <span>Reel</span>
-                    <p>Create short vertical videos</p>
-                </div>
-                <div class="post-option" onclick="selectPostType('story')">
-                    <i class="fas fa-circle"></i>
-                    <span>Story</span>
-                    <p>Share temporary photos and videos</p>
-                </div>
-            </div>
+        </div>
+        
+        <div class="chat-controls">
+            <button onclick="newChat()" class="btn btn-secondary">New Chat</button>
+            <button onclick="endChat()" class="btn btn-danger">End Chat</button>
         </div>
     </div>
 
-    <!-- Story Viewer Modal -->
-    <div id="storyViewerModal" class="modal fullscreen">
-        <div class="story-viewer">
-            <div class="story-header">
-                <div class="story-user-info">
-                    <img id="storyUserAvatar" src="" alt="User Avatar">
-                    <span id="storyUsername">username</span>
-                    <span id="storyTime">2h</span>
-                </div>
-                <span class="close" onclick="closeStoryViewer()">&times;</span>
+    <!-- Video Chat Interface -->
+    <div id="videoPage" class="page">
+        <div class="video-header">
+            <h2>Omegle Stranger</h2>
+            <div class="connection-status" id="videoConnectionStatus">Connecting...</div>
+        </div>
+        
+        <div class="video-container">
+            <div class="video-section">
+                <video id="localVideo" autoplay muted class="video-feed"></video>
+                <video id="remoteVideo" autoplay class="video-feed"></video>
             </div>
-            <div class="story-progress">
-                <div class="progress-bar"></div>
+            
+            <div class="video-chat-messages" id="videoChatMessages"></div>
+        </div>
+        
+        <div class="video-input-section">
+            <div class="video-typing-indicator" id="videoTypingIndicator"></div>
+            <div class="video-input-container">
+                <input type="text" id="videoMessageInput" placeholder="Type your message..." class="message-input">
+                <input type="file" id="videoFileInput" accept="image/*,video/*" style="display: none;">
+                <button onclick="document.getElementById('videoFileInput').click()" class="attach-btn">
+                    <i data-lucide="paperclip"></i>
+                </button>
+                <button onclick="sendVideoMessage()" class="send-btn">Send</button>
             </div>
-            <div class="story-content">
-                <img id="storyImage" src="" alt="Story">
-            </div>
-            <div class="story-navigation">
-                <div class="story-nav-left" onclick="previousStory()"></div>
-                <div class="story-nav-right" onclick="nextStory()"></div>
-            </div>
+        </div>
+        
+        <div class="video-controls">
+            <button onclick="toggleMic()" class="control-btn" id="micBtn">
+                <i data-lucide="mic"></i>
+                <span class="tooltip">Toggle Mic</span>
+            </button>
+            <button onclick="toggleCamera()" class="control-btn" id="cameraBtn">
+                <i data-lucide="video"></i>
+                <span class="tooltip">Toggle Camera</span>
+            </button>
+            <button onclick="endVideoCall()" class="control-btn end-call">
+                <i data-lucide="phone-off"></i>
+                <span class="tooltip">End Call</span>
+            </button>
         </div>
     </div>
 
-    <!-- Chat Modal -->
-    <div id="chatModal" class="modal fullscreen">
-        <div class="chat-window">
-            <div class="chat-header">
-                <i class="fas fa-arrow-left back-btn" onclick="closeChatModal()"></i>
-                <div class="chat-user-info">
-                    <img id="chatUserAvatar" src="" alt="User Avatar">
-                    <div class="chat-user-details">
-                        <span id="chatUsername">username</span>
-                        <span id="chatUserStatus">Active now</span>
-                    </div>
-                </div>
-                <div class="chat-actions">
-                    <i class="fas fa-phone"></i>
-                    <i class="fas fa-video"></i>
-                </div>
-            </div>
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages will be loaded here -->
-            </div>
-            <div class="chat-input">
-                <i class="fas fa-smile emoji-btn"></i>
-                <input type="text" id="messageInput" placeholder="Type a message...">
-                <i class="fas fa-camera camera-btn"></i>
-                <i class="fas fa-microphone mic-btn"></i>
-                <i class="fas fa-paper-plane send-btn" onclick="sendMessage()"></i>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Video control states
+        let micActive = true;
+        let cameraActive = true;
+        
+        function toggleMic() {
+            micActive = !micActive;
+            const micBtn = document.getElementById('micBtn');
+            const micIcon = micBtn.querySelector('i');
+            
+            if (micActive) {
+                micIcon.setAttribute('data-lucide', 'mic');
+                micBtn.classList.remove('active');
+                // Implement actual mic enable logic here
+                console.log('Mic enabled');
+            } else {
+                micIcon.setAttribute('data-lucide', 'mic-off');
+                micBtn.classList.add('active');
+                // Implement actual mic disable logic here
+                console.log('Mic disabled');
+            }
+            
+            // Refresh the icon
+            lucide.createIcons();
+        }
+        
+        function toggleCamera() {
+            cameraActive = !cameraActive;
+            const cameraBtn = document.getElementById('cameraBtn');
+            const cameraIcon = cameraBtn.querySelector('i');
+            const localVideo = document.getElementById('localVideo');
+            
+            if (cameraActive) {
+                cameraIcon.setAttribute('data-lucide', 'video');
+                cameraBtn.classList.remove('active');
+                // Implement actual camera enable logic here
+                localVideo.style.opacity = '1';
+                console.log('Camera enabled');
+            } else {
+                cameraIcon.setAttribute('data-lucide', 'video-off');
+                cameraBtn.classList.add('active');
+                // Implement actual camera disable logic here
+                localVideo.style.opacity = '0';
+                console.log('Camera disabled');
+            }
+            
+            // Refresh the icon
+            lucide.createIcons();
+        }
+        
+        function endVideoCall() {
+            // Implement end call logic here
+            console.log('Call ended');
+            // For demo purposes, just go back to home
+            document.getElementById('videoPage').classList.remove('active');
+            document.getElementById('homePage').classList.add('active');
+        }
+        
+        // Existing functions (keep these as they were)
+        function showTermsForChat() {
+            document.getElementById('termsModal').style.display = 'block';
+            currentAction = 'chat';
+        }
+        
+        function showTermsForVideo() {
+            document.getElementById('termsModal').style.display = 'block';
+            currentAction = 'video';
+        }
+        
+        function agreeTerms() {
+            document.getElementById('termsModal').style.display = 'none';
+            if (currentAction === 'chat') {
+                document.getElementById('homePage').classList.remove('active');
+                document.getElementById('chatPage').classList.add('active');
+            } else if (currentAction === 'video') {
+                document.getElementById('homePage').classList.remove('active');
+                document.getElementById('videoPage').classList.add('active');
+                // Initialize video stream
+                initVideoStream();
+            }
+        }
+        
+        function initVideoStream() {
+            // This would initialize the actual video stream
+            console.log('Initializing video stream...');
+            // For demo purposes, we'll just show black video feeds
+        }
+        
+        // Other existing functions...
+        let currentAction = '';
+        
+        function showAdultWarning() {
+            alert("This is just a demo. No adult content available.");
+        }
+        
+        function showTermsPolicy() {
+            alert("Terms and conditions would be displayed here.");
+        }
+        
+        function showPrivacyPolicy() {
+            alert("Privacy policy would be displayed here.");
+        }
+        
+        function showDMCADisclaimer() {
+            alert("DMCA disclaimer would be displayed here.");
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const messages = document.getElementById('chatMessages');
+            if (input.value.trim() !== '') {
+                messages.innerHTML += `<div class="message sent">You: ${input.value}</div>`;
+                input.value = '';
+                // Simulate response
+                setTimeout(() => {
+                    messages.innerHTML += `<div class="message received">Stranger: Hello there!</div>`;
+                    messages.scrollTop = messages.scrollHeight;
+                }, 1000);
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+        
+        function sendVideoMessage() {
+            const input = document.getElementById('videoMessageInput');
+            const messages = document.getElementById('videoChatMessages');
+            if (input.value.trim() !== '') {
+                messages.innerHTML += `<div class="message sent">You: ${input.value}</div>`;
+                input.value = '';
+                // Simulate response
+                setTimeout(() => {
+                    messages.innerHTML += `<div class="message received">Stranger: Nice to see you!</div>`;
+                    messages.scrollTop = messages.scrollHeight;
+                }, 1000);
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+        
+        function newChat() {
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('connectionStatus').textContent = 'Connecting to new stranger...';
+            // Simulate connection
+            setTimeout(() => {
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                document.getElementById('chatMessages').innerHTML = 
+                    `<div class="message info">You are now chatting with a random stranger. Say hi!</div>`;
+            }, 1500);
+        }
+        
+        function endChat() {
+            document.getElementById('chatPage').classList.remove('active');
+            document.getElementById('homePage').classList.add('active');
+        }
+    </script>
 </body>
-</html> 
+</html>
