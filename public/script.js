@@ -1,5 +1,4 @@
-
-// Global Variables
+   // Global Variables
 let currentUser = null;
 let posts = [];
 let stories = [];
@@ -109,8 +108,8 @@ function initializeEventListeners() {
     // Login Form
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     
-    // Signup Form
-    document.getElementById('signupForm').addEventListener('submit', handleSignup);
+    // Initialize multi-step signup
+    initializeMultiStepSignup();
     
     // Profile Setup Form
     document.getElementById('profileSetupForm').addEventListener('submit', handleProfileSetup);
@@ -190,20 +189,530 @@ async function handleLogin(e) {
     }
 }
 
-async function handleSignup(e) {
-    e.preventDefault();
-    const formData = {
-        name: document.getElementById('signupName').value,
-        username: document.getElementById('signupUsername').value,
-        email: document.getElementById('signupEmail').value,
-        phone: document.getElementById('signupPhone').value,
-        password: document.getElementById('signupPassword').value
-    };
-    
-    // Validate fields
-    if (!validateSignupForm(formData)) {
+// Multi-step signup state
+let currentStep = 1;
+let signupData = {};
+let otpInterval = null;
+let usernameCheckTimeout = null;
+
+// Multi-step signup functions
+function nextStep(step) {
+    if (!validateCurrentStep(step)) {
         return;
     }
+    
+    // Save current step data
+    saveStepData(step);
+    
+    if (step < 5) {
+        showStep(step + 1);
+        updateProgress(step + 1);
+        
+        // Add slide animation
+        const currentStepEl = document.querySelector(`[data-step="${step}"]`);
+        const nextStepEl = document.querySelector(`[data-step="${step + 1}"]`);
+        
+        if (currentStepEl) currentStepEl.classList.add('slide-out-left');
+        if (nextStepEl) nextStepEl.classList.add('slide-in-right');
+    }
+}
+
+function previousStep(step) {
+    if (step > 1) {
+        showStep(step - 1);
+        updateProgress(step - 1);
+    }
+}
+
+function skipStep(step) {
+    if (step === 3) { // Email step
+        showStep(4);
+        updateProgress(4);
+    }
+}
+
+function showStep(stepNumber) {
+    // Hide all steps
+    document.querySelectorAll('.form-step').forEach(step => {
+        step.classList.remove('active');
+    });
+    
+    // Show current step
+    const targetStep = document.querySelector(`[data-step="${stepNumber}"]`);
+    if (targetStep) {
+        targetStep.classList.add('active');
+    }
+    
+    // Update step indicators
+    document.querySelectorAll('.step').forEach((step, index) => {
+        step.classList.remove('active', 'completed');
+        if (index + 1 === stepNumber) {
+            step.classList.add('active');
+        } else if (index + 1 < stepNumber) {
+            step.classList.add('completed');
+        }
+    });
+    
+    currentStep = stepNumber;
+    
+    // Focus on input field
+    setTimeout(() => {
+        const input = targetStep.querySelector('input');
+        if (input && !input.disabled) {
+            input.focus();
+        }
+    }, 100);
+}
+
+function updateProgress(step) {
+    const progressFill = document.getElementById('progressFill');
+    const percentage = (step / 5) * 100;
+    progressFill.style.width = percentage + '%';
+}
+
+function validateCurrentStep(step) {
+    switch (step) {
+        case 1: // Name
+            const name = document.getElementById('stepName').value.trim();
+            if (!name) {
+                showToast('Please enter your full name', 'error');
+                return false;
+            }
+            if (name.length < 2) {
+                showToast('Name must be at least 2 characters', 'error');
+                return false;
+            }
+            return true;
+            
+        case 2: // Username
+            const username = document.getElementById('stepUsername').value.trim();
+            if (!username) {
+                showToast('Please enter a username', 'error');
+                return false;
+            }
+            if (!isValidUsername(username)) {
+                showToast('Username can only contain lowercase letters, numbers, and underscores', 'error');
+                return false;
+            }
+            if (document.getElementById('usernameValidation').classList.contains('invalid')) {
+                showToast('Username is already taken', 'error');
+                return false;
+            }
+            return true;
+            
+        case 3: // Email (optional)
+            const email = document.getElementById('stepEmail').value.trim();
+            if (email && !isValidEmail(email)) {
+                showToast('Please enter a valid email address', 'error');
+                return false;
+            }
+            return true;
+            
+        case 4: // Phone + OTP
+            const phone = document.getElementById('stepPhone').value.trim();
+            const otpSection = document.getElementById('otpSection');
+            
+            if (!phone) {
+                showToast('Please enter your phone number', 'error');
+                return false;
+            }
+            
+            if (!isValidPhoneNumber(phone)) {
+                showToast('Please enter a valid phone number', 'error');
+                return false;
+            }
+            
+            // If OTP section is visible, validate OTP
+            if (otpSection.style.display !== 'none') {
+                const otp = getEnteredOTP();
+                if (!otp || otp.length !== 6) {
+                    showToast('Please enter the complete 6-digit OTP', 'error');
+                    return false;
+                }
+                
+                // Check if phone is verified
+                if (!signupData.phoneVerified) {
+                    showToast('Please verify your phone number first', 'error');
+                    return false;
+                }
+            }
+            return true;
+            
+        case 5: // Password
+            const password = document.getElementById('stepPassword').value;
+            if (!password) {
+                showToast('Please create a password', 'error');
+                return false;
+            }
+            if (password.length < 6) {
+                showToast('Password must be at least 6 characters', 'error');
+                return false;
+            }
+            return true;
+            
+        default:
+            return true;
+    }
+}
+
+function saveStepData(step) {
+    switch (step) {
+        case 1:
+            signupData.name = document.getElementById('stepName').value.trim();
+            break;
+        case 2:
+            signupData.username = document.getElementById('stepUsername').value.trim().toLowerCase();
+            break;
+        case 3:
+            signupData.email = document.getElementById('stepEmail').value.trim();
+            break;
+        case 4:
+            signupData.phone = document.getElementById('stepPhone').value.trim();
+            break;
+        case 5:
+            signupData.password = document.getElementById('stepPassword').value;
+            break;
+    }
+}
+
+function isValidUsername(username) {
+    const usernameRegex = /^[a-z0-9_]+$/;
+    return usernameRegex.test(username) && username.length >= 3 && username.length <= 20;
+}
+
+// Username validation with API check
+function setupUsernameValidation() {
+    const usernameInput = document.getElementById('stepUsername');
+    const validationIcon = document.getElementById('usernameValidation');
+    const errorMessage = document.getElementById('usernameError');
+    const nextBtn = document.querySelector('[data-step="2"] .next-btn');
+    
+    usernameInput.addEventListener('input', function() {
+        const username = this.value.trim().toLowerCase();
+        this.value = username; // Force lowercase
+        
+        clearTimeout(usernameCheckTimeout);
+        errorMessage.textContent = '';
+        validationIcon.className = 'validation-icon';
+        nextBtn.disabled = true;
+        
+        if (!username) {
+            return;
+        }
+        
+        if (!isValidUsername(username)) {
+            validationIcon.className = 'validation-icon invalid';
+            errorMessage.textContent = 'Only lowercase letters, numbers, and underscores allowed (3-20 characters)';
+            return;
+        }
+        
+        // Show checking state
+        validationIcon.className = 'validation-icon checking';
+        
+        // Debounce API call
+        usernameCheckTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/check-username`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.available) {
+                    validationIcon.className = 'validation-icon valid';
+                    nextBtn.disabled = false;
+                } else {
+                    validationIcon.className = 'validation-icon invalid';
+                    errorMessage.textContent = data.error || 'Username already taken, please choose another';
+                }
+            } catch (error) {
+                validationIcon.className = 'validation-icon invalid';
+                errorMessage.textContent = 'Error checking username. Please try again.';
+            }
+        }, 500);
+    });
+}
+
+// Enhanced OTP functionality
+function handlePhoneStep() {
+    const otpSection = document.getElementById('otpSection');
+    
+    if (otpSection.style.display === 'none') {
+        sendOTP();
+    } else {
+        verifyOTPAndNext();
+    }
+}
+
+async function sendOTP() {
+    const phone = document.getElementById('stepPhone').value.trim();
+    const countryCode = document.getElementById('countryCode').value;
+    const fullPhone = countryCode + phone;
+    
+    if (!phone) {
+        showToast('Please enter your phone number', 'error');
+        return;
+    }
+    
+    if (!isValidPhoneNumber(phone)) {
+        showToast('Please enter a valid phone number', 'error');
+        return;
+    }
+    
+    try {
+        // Simulate OTP sending (replace with actual API call)
+        const response = await simulateOTPSend(fullPhone);
+        
+        if (response.success) {
+            document.getElementById('otpSection').style.display = 'block';
+            document.getElementById('phoneNextBtn').innerHTML = '<span>Verify OTP</span><i class="fas fa-check"></i>';
+            setupOTPInputs();
+            startOTPTimer();
+            showToast('OTP sent to your phone number!', 'success');
+        } else {
+            showToast('Failed to send OTP. Please try again.', 'error');
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// Simulate OTP sending for demo purposes
+async function simulateOTPSend(phone) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            console.log(`Simulated OTP sent to ${phone}: 123456`);
+            resolve({ success: true, otp: '123456' });
+        }, 1000);
+    });
+}
+
+function setupOTPInputs() {
+    const otpInputs = document.querySelectorAll('.otp-digit');
+    
+    otpInputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+            const value = e.target.value;
+            
+            // Only allow numbers
+            if (!/^\d*$/.test(value)) {
+                e.target.value = '';
+                return;
+            }
+            
+            // Move to next input if current is filled
+            if (value && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+            
+            // Check if all inputs are filled
+            checkOTPComplete();
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            // Move to previous input on backspace
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+        
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pasteData = e.clipboardData.getData('text');
+            const digits = pasteData.replace(/\D/g, '').split('').slice(0, 6);
+            
+            digits.forEach((digit, i) => {
+                if (otpInputs[i]) {
+                    otpInputs[i].value = digit;
+                }
+            });
+            
+            checkOTPComplete();
+        });
+    });
+}
+
+function checkOTPComplete() {
+    const otpInputs = document.querySelectorAll('.otp-digit');
+    const otp = Array.from(otpInputs).map(input => input.value).join('');
+    
+    if (otp.length === 6) {
+        // Auto-verify when all digits are entered
+        setTimeout(verifyOTPAndNext, 500);
+    }
+}
+
+function getEnteredOTP() {
+    const otpInputs = document.querySelectorAll('.otp-digit');
+    return Array.from(otpInputs).map(input => input.value).join('');
+}
+
+async function verifyOTPAndNext() {
+    const phone = document.getElementById('stepPhone').value.trim();
+    const countryCode = document.getElementById('countryCode').value;
+    const fullPhone = countryCode + phone;
+    const otp = getEnteredOTP();
+    
+    if (!otp || otp.length !== 6) {
+        showToast('Please enter the complete 6-digit OTP', 'error');
+        return;
+    }
+    
+    try {
+        // Simulate OTP verification (replace with actual API call)
+        const response = await simulateOTPVerify(fullPhone, otp);
+        
+        if (response.success) {
+            clearInterval(otpInterval);
+            showToast('Phone number verified successfully!', 'success');
+            
+            // Save phone data
+            signupData.phone = fullPhone;
+            signupData.phoneVerified = true;
+            
+            // Move to next step
+            nextStep(4);
+        } else {
+            showToast('Invalid OTP. Please try again.', 'error');
+            // Clear OTP inputs
+            document.querySelectorAll('.otp-digit').forEach(input => input.value = '');
+            document.querySelector('.otp-digit').focus();
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// Simulate OTP verification for demo purposes
+async function simulateOTPVerify(phone, otp) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // For demo, accept 123456 as valid OTP
+            const isValid = otp === '123456';
+            resolve({ success: isValid });
+        }, 1000);
+    });
+}
+
+function startOTPTimer() {
+    let timeLeft = 60; // 60 seconds
+    const timerElement = document.getElementById('otpTimer');
+    const resendBtn = document.getElementById('resendOTP');
+    
+    resendBtn.disabled = true;
+    
+    otpInterval = setInterval(() => {
+        timerElement.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+            clearInterval(otpInterval);
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend OTP';
+            showToast('You can now resend the OTP', 'info');
+        }
+        
+        timeLeft--;
+    }, 1000);
+}
+
+async function resendOTP() {
+    const phone = document.getElementById('stepPhone').value.trim();
+    document.getElementById('resendOTP').disabled = true;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/send-otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phone })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            startOTPTimer();
+            showToast('New OTP sent!', 'success');
+        } else {
+            showToast(data.error || 'Failed to send OTP', 'error');
+            document.getElementById('resendOTP').disabled = false;
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+        document.getElementById('resendOTP').disabled = false;
+    }
+}
+
+// Password strength indicator
+function setupPasswordStrength() {
+    const passwordInput = document.getElementById('stepPassword');
+    const strengthContainer = document.getElementById('passwordStrength');
+    
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        const strength = calculatePasswordStrength(password);
+        updatePasswordStrength(strength, strengthContainer);
+    });
+}
+
+function calculatePasswordStrength(password) {
+    let score = 0;
+    
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    
+    if (score < 3) return 'weak';
+    if (score < 5) return 'medium';
+    return 'strong';
+}
+
+function updatePasswordStrength(strength, container) {
+    const strengthText = {
+        weak: 'Weak password',
+        medium: 'Medium strength',
+        strong: 'Strong password'
+    };
+    
+    container.innerHTML = `
+        <div class="strength-bar strength-${strength}">
+            <div class="strength-fill"></div>
+        </div>
+        <div class="strength-text">${strengthText[strength]}</div>
+    `;
+}
+
+function isValidPhoneNumber(phone) {
+    // Remove all non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Basic validation: should be between 7-15 digits
+    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+        return false;
+    }
+    
+    // More specific validation based on country code can be added here
+    return true;
+}
+
+function formatPhoneDisplay(countryCode, phone) {
+    return `${countryCode} ${phone}`;
+}
+
+// Complete signup
+async function completeSignup() {
+    if (!validateCurrentStep(5)) {
+        return;
+    }
+    
+    saveStepData(5);
     
     try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -211,22 +720,70 @@ async function handleSignup(e) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(signupData)
         });
         
         const data = await response.json();
         
         if (response.ok) {
-            // Save user data temporarily for profile setup
-            sessionStorage.setItem('tempUser', JSON.stringify(formData));
-            showOTPModal('signup');
-            showToast('Registration successful! Please verify OTP.', 'success');
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Reset signup form
+            signupData = {};
+            currentStep = 1;
+            showStep(1);
+            updateProgress(1);
+            
+            // Redirect to profile setup
+            showPage('profileSetupPage');
+            
+            // Pre-fill profile setup form
+            document.getElementById('profileName').value = currentUser.name;
+            document.getElementById('profileUsername').value = currentUser.username;
+            
+            showToast('Account created successfully!', 'success');
         } else {
             showToast(data.error || 'Registration failed', 'error');
         }
     } catch (error) {
         showToast('Network error. Please try again.', 'error');
     }
+}
+
+// Initialize multi-step signup
+function initializeMultiStepSignup() {
+    setupUsernameValidation();
+    setupPasswordStrength();
+    
+    // Handle Enter key navigation
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && document.getElementById('signupPage').classList.contains('active')) {
+            const activeStep = document.querySelector('.form-step.active');
+            if (activeStep) {
+                const stepNumber = parseInt(activeStep.dataset.step);
+                const nextBtn = activeStep.querySelector('.next-btn');
+                const finishBtn = activeStep.querySelector('.finish-btn');
+                
+                if (stepNumber === 5 && finishBtn && !finishBtn.disabled) {
+                    completeSignup();
+                } else if (nextBtn && !nextBtn.disabled) {
+                    if (stepNumber === 4 && document.getElementById('otpSection').style.display !== 'none') {
+                        verifyOTPAndNext();
+                    } else {
+                        nextStep(stepNumber);
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function handleSignup(e) {
+    // This function is no longer used as we have multi-step signup
+    e.preventDefault();
 }
 
 function validateSignupForm(data) {
@@ -275,76 +832,131 @@ function handleProfileSetup(e) {
     showToast('Profile setup complete!', 'success');
 }
 
-function handleForgotPassword(e) {
+async function handleForgotPassword(e) {
     e.preventDefault();
     const email = document.getElementById('forgotEmail').value;
     
-    if (isValidEmail(email)) {
-        showOTPModal('forgot');
-        closeForgotPasswordModal();
-        showToast('OTP sent to your email', 'success');
-    } else {
+    if (!isValidEmail(email)) {
         showToast('Please enter a valid email', 'error');
+        return;
+    }
+    
+    // Find user by email to get phone number
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            sessionStorage.setItem('forgotPasswordEmail', email);
+            // In a real app, the backend would send OTP to user's registered phone
+            showOTPModal('forgot');
+            closeForgotPasswordModal();
+            showToast('OTP sent to your registered phone number', 'success');
+        } else {
+            showToast(data.error || 'User not found', 'error');
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
     }
 }
 
-function handleOTPVerification(e) {
+async function handleOTPVerification(e) {
     e.preventDefault();
     const otpInputs = document.querySelectorAll('.otp-input');
     const otp = Array.from(otpInputs).map(input => input.value).join('');
     
-    // Simulate OTP verification (in real app, this would be validated server-side)
-    if (otp === '1234') {
-        const tempUser = JSON.parse(sessionStorage.getItem('tempUser'));
-        if (tempUser) {
-            // Complete signup
-            completeSignup(tempUser);
+    if (otp.length !== 6) {
+        showToast('Please enter complete 6-digit OTP', 'error');
+        return;
+    }
+    
+    const phone = sessionStorage.getItem('verificationPhone');
+    const tempUser = JSON.parse(sessionStorage.getItem('tempUser'));
+    
+    if (!phone) {
+        showToast('Session expired. Please try again.', 'error');
+        closeOtpModal();
+        return;
+    }
+    
+    try {
+        // Verify OTP
+        const response = await fetch(`${API_BASE_URL}/verify-otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phone, otp })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (tempUser) {
+                // Complete signup after OTP verification
+                await completeSignup(tempUser);
+            } else {
+                // Forgot password flow
+                showToast('Phone number verified! Password reset successful', 'success');
+                closeOtpModal();
+                showPage('loginPage');
+            }
         } else {
-            // Forgot password flow
-            showToast('Password reset successful', 'success');
-            closeOtpModal();
-            showPage('loginPage');
+            showToast(data.error || 'Invalid OTP', 'error');
+            if (data.attemptsRemaining !== undefined) {
+                showToast(`${data.attemptsRemaining} attempts remaining`, 'warning');
+            }
         }
-    } else {
-        showToast('Invalid OTP', 'error');
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
     }
 }
 
-function completeSignup(userData) {
-    // Create new user
-    const newUser = {
-        id: Date.now(),
-        ...userData,
-        profilePicture: '',
-        bio: '',
-        gender: '',
-        followers: 0,
-        following: 0,
-        posts: 0,
-        createdAt: new Date().toISOString()
-    };
-    
-    // Save to users array
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    // Set as current user
-    currentUser = newUser;
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    
-    // Clear temp data
-    sessionStorage.removeItem('tempUser');
-    
-    // Close modal and redirect
-    closeOtpModal();
-    showPage('profileSetupPage');
-    
-    // Pre-fill profile setup form
-    document.getElementById('profileName').value = newUser.name;
-    document.getElementById('profileUsername').value = newUser.username;
-    
-    showToast('Account created successfully!', 'success');
+async function completeSignup(userData) {
+    try {
+        // Register user with backend
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Clear temp data
+            sessionStorage.removeItem('tempUser');
+            sessionStorage.removeItem('verificationPhone');
+            
+            // Close modal and redirect
+            closeOtpModal();
+            showPage('profileSetupPage');
+            
+            // Pre-fill profile setup form
+            document.getElementById('profileName').value = currentUser.name;
+            document.getElementById('profileUsername').value = currentUser.username;
+            
+            showToast('Account created successfully!', 'success');
+        } else {
+            showToast(data.error || 'Registration failed', 'error');
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+    }
 }
 
 // Page Navigation
