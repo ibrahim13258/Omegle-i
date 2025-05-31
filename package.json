@@ -1,4 +1,4 @@
- {
+{
   "name": "omegle-clone",
   "version": "1.0.0",
   "description": "Omegle-style video chat application",
@@ -8,13 +8,12 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "socket.io": "^4.7.5"
+    "ws": "^8.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "keywords": ["chat", "video", "webrtc", "socket.io"],
-  "author": "Your Name",
-  "license": "MIT"
+    "nodemon": "^2.0.22"
+  }
 }
