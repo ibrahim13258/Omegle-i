@@ -1,195 +1,152 @@
-// server.js
-require('dotenv').config();
+ 
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
+const socketIo = require('socket.io');
 const path = require('path');
-const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = socketIo(server);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files
+app.use(express.static(__dirname));
 
-// Store connected users and rooms
-const users = {};
-const rooms = {};
-
-// WebSocket connection handler
-wss.on('connection', (ws) => {
-    console.log('New WebSocket connection');
-
-    ws.on('message', (message) => {
-        try {
-            const data = JSON.parse(message);
-            handleMessage(ws, data);
-        } catch (err) {
-            console.error('Error parsing message:', err);
-        }
-    });
-
-    ws.on('close', () => {
-        cleanupUser(ws);
-    });
+// Serve index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-function handleMessage(ws, data) {
-    switch (data.type) {
-        case 'register':
-            handleRegister(ws, data);
-            break;
-        case 'offer':
-        case 'answer':
-        case 'candidate':
-            handleSignalingData(ws, data);
-            break;
-        case 'chat':
-            handleChatMessage(ws, data);
-            break;
-        case 'disconnect':
-            cleanupUser(ws);
-            break;
-        default:
-            console.log('Unknown message type:', data.type);
-    }
-}
+// Store waiting users
+let waitingTextUsers = [];
+let waitingVideoUsers = [];
+let connectedPairs = new Map();
 
-function handleRegister(ws, data) {
-    const userId = data.userId;
-    const interest = data.interest || 'general';
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
     
-    users[userId] = {
-        ws,
-        userId,
-        interest,
-        pairedWith: null
-    };
-    
-    // Try to pair users with same interest
-    pairUsers(interest, userId);
-    
-    ws.send(JSON.stringify({
-        type: 'registered',
-        userId,
-        interest
-    }));
-}
-
-function pairUsers(interest, newUserId) {
-    const availableUsers = Object.values(users).filter(user => 
-        user.interest === interest && 
-        user.userId !== newUserId && 
-        !user.pairedWith
-    );
-    
-    if (availableUsers.length > 0) {
-        const user1 = users[newUserId];
-        const user2 = availableUsers[0];
-        
-        // Create a room
-        const roomId = `${newUserId}-${user2.userId}`;
-        rooms[roomId] = {
-            user1: newUserId,
-            user2: user2.userId
-        };
-        
-        // Update user pairing info
-        user1.pairedWith = user2.userId;
-        user2.pairedWith = newUserId;
-        
-        // Notify both users
-        user1.ws.send(JSON.stringify({
-            type: 'paired',
-            partnerId: user2.userId,
-            roomId
-        }));
-        
-        user2.ws.send(JSON.stringify({
-            type: 'paired',
-            partnerId: newUserId,
-            roomId
-        }));
-    }
-}
-
-function handleSignalingData(ws, data) {
-    const targetUserId = data.targetUserId;
-    const senderUserId = data.senderUserId;
-    
-    if (users[targetUserId] && users[targetUserId].ws) {
-        users[targetUserId].ws.send(JSON.stringify({
-            type: data.type,
-            [data.type]: data[data.type],
-            senderUserId
-        }));
-    }
-}
-
-function handleChatMessage(ws, data) {
-    const targetUserId = data.targetUserId;
-    const senderUserId = data.senderUserId;
-    const message = data.message;
-    
-    if (users[targetUserId] && users[targetUserId].ws) {
-        users[targetUserId].ws.send(JSON.stringify({
-            type: 'chat',
-            message,
-            senderUserId
-        }));
-    }
-}
-
-function cleanupUser(ws) {
-    const userId = Object.keys(users).find(id => users[id].ws === ws);
-    
-    if (userId) {
-        const user = users[userId];
-        
-        // Notify paired user if exists
-        if (user.pairedWith && users[user.pairedWith]) {
-            users[user.pairedWith].ws.send(JSON.stringify({
-                type: 'partnerDisconnected'
-            }));
-            users[user.pairedWith].pairedWith = null;
+    // Handle text chat joining
+    socket.on('join-text-chat', () => {
+        if (waitingTextUsers.length > 0) {
+            // Match with waiting user
+            const partner = waitingTextUsers.shift();
+            const roomId = `text-${socket.id}-${partner.id}`;
+            
+            socket.join(roomId);
+            partner.join(roomId);
+            
+            connectedPairs.set(socket.id, { partner: partner.id, room: roomId, type: 'text' });
+            connectedPairs.set(partner.id, { partner: socket.id, room: roomId, type: 'text' });
+            
+            socket.emit('matched');
+            partner.emit('matched');
+            
+            console.log(`Text chat matched: ${socket.id} with ${partner.id}`);
+        } else {
+            // Add to waiting list
+            waitingTextUsers.push(socket);
+            console.log(`User ${socket.id} waiting for text chat`);
         }
-        
-        // Clean up room if exists
-        const roomId = Object.keys(rooms).find(id => 
-            rooms[id].user1 === userId || rooms[id].user2 === userId
-        );
-        
-        if (roomId) {
-            delete rooms[roomId];
-        }
-        
-        delete users[userId];
-        console.log(`User ${userId} disconnected`);
-    }
-}
-
-// API Routes
-app.get('/api/ice-servers', (req, res) => {
-    // In production, you should use your own STUN/TURN servers
-    res.json({
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
-            // Add your TURN servers here if needed
-        ]
     });
+    
+    // Handle video chat joining
+    socket.on('join-video-chat', () => {
+        if (waitingVideoUsers.length > 0) {
+            // Match with waiting user
+            const partner = waitingVideoUsers.shift();
+            const roomId = `video-${socket.id}-${partner.id}`;
+            
+            socket.join(roomId);
+            partner.join(roomId);
+            
+            connectedPairs.set(socket.id, { partner: partner.id, room: roomId, type: 'video' });
+            connectedPairs.set(partner.id, { partner: socket.id, room: roomId, type: 'video' });
+            
+            socket.emit('matched');
+            partner.emit('matched');
+            
+            console.log(`Video chat matched: ${socket.id} with ${partner.id}`);
+        } else {
+            // Add to waiting list
+            waitingVideoUsers.push(socket);
+            console.log(`User ${socket.id} waiting for video chat`);
+        }
+    });
+    
+    // Handle messages
+    socket.on('message', (message) => {
+        const pair = connectedPairs.get(socket.id);
+        if (pair) {
+            socket.to(pair.room).emit('message', { message, sender: socket.id });
+        }
+    });
+    
+    // Handle typing indicator
+    socket.on('typing', () => {
+        const pair = connectedPairs.get(socket.id);
+        if (pair) {
+            socket.to(pair.room).emit('typing');
+        }
+    });
+    
+    // Handle file upload
+    socket.on('file-upload', (fileData) => {
+        const pair = connectedPairs.get(socket.id);
+        if (pair && fileData.data && fileData.data.length <= 70000000) { // ~50MB base64 limit
+            socket.to(pair.room).emit('file-received', fileData);
+            console.log(`File sent: ${fileData.name} from ${socket.id}`);
+        }
+    });
+    
+    // WebRTC signaling
+    socket.on('video-offer', (offer) => {
+        const pair = connectedPairs.get(socket.id);
+        if (pair && pair.type === 'video') {
+            socket.to(pair.room).emit('video-offer', offer);
+        }
+    });
+    
+    socket.on('video-answer', (answer) => {
+        const pair = connectedPairs.get(socket.id);
+        if (pair && pair.type === 'video') {
+            socket.to(pair.room).emit('video-answer', answer);
+        }
+    });
+    
+    socket.on('ice-candidate', (candidate) => {
+        const pair = connectedPairs.get(socket.id);
+        if (pair && pair.type === 'video') {
+            socket.to(pair.room).emit('ice-candidate', candidate);
+        }
+    });
+    
+    // Handle manual disconnect
+    socket.on('disconnect-chat', () => {
+        handleDisconnection(socket);
+    });
+    
+    // Handle socket disconnection
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        handleDisconnection(socket);
+    });
+    
+    function handleDisconnection(socket) {
+        // Remove from waiting lists
+        waitingTextUsers = waitingTextUsers.filter(user => user.id !== socket.id);
+        waitingVideoUsers = waitingVideoUsers.filter(user => user.id !== socket.id);
+        
+        // Handle paired disconnection
+        const pair = connectedPairs.get(socket.id);
+        if (pair) {
+            socket.to(pair.room).emit('user-disconnected');
+            connectedPairs.delete(socket.id);
+            connectedPairs.delete(pair.partner);
+            console.log(`Pair disconnected: ${socket.id} and ${pair.partner}`);
+        }
+    }
 });
 
-// Serve frontend
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
