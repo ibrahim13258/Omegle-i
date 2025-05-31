@@ -1,394 +1,100 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Omegle - Talk to strangers!</title>
-    <link href="https://unpkg.com/lucide@latest/dist/lucide.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <style>
-        /* Additional styles for the enhanced video controls */
-        .video-controls {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 50px;
-            margin: 10px auto;
-            max-width: 400px;
-        }
-
-        .control-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: none;
-            background: #444;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .control-btn:hover {
-            background: #555;
-            transform: scale(1.1);
-        }
-
-        .control-btn.active {
-            background: #f44336;
-        }
-
-        .control-btn i {
-            font-size: 20px;
-        }
-
-        .end-call {
-            background: #f44336;
-        }
-
-        .end-call:hover {
-            background: #d32f2f;
-            transform: scale(1.1);
-        }
-
-        .tooltip {
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.2s;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .control-btn:hover .tooltip {
-            opacity: 1;
-        }
-
-        .attach-btn {
-            position: relative;
-        }
-
-        .attach-btn:hover::after {
-            content: "Attach file";
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        @media (max-width: 600px) {
-            .video-controls {
-                gap: 15px;
-                padding: 10px;
-            }
-            
-            .control-btn {
-                width: 45px;
-                height: 45px;
-            }
-        }
-    </style>
 </head>
 <body>
-    <!-- Home Page -->
-    <div id="homePage" class="page active">
-        <div class="container">
+    <div class="container">
+        <header>
             <div class="logo">
                 <span class="logo-icon">💬</span>
                 <span class="logo-text">omegle<span class="com">.com</span></span>
             </div>
-            
             <h1>Talk to strangers!</h1>
-            
-            <div class="disclaimer">
-                <p>By using Omegle, you accept the terms at the bottom. You must be 18+ or 13+ with parental permission.</p>
-                <p><strong>Mobile video chat is an experimental new feature</strong></p>
-                <p><strong>Video is monitored, so keep it clean!</strong></p>
-                <p>Go to <a href="#" onclick="showAdultWarning()">an adult site</a> instead if that's what you want</p>
+            <p class="disclaimer">By using Omegle, you accept the terms at the bottom. You must be 18+, or 13+ with parental permission.</p>
+            <p class="feature-note">Mobile video chat is an experimental new feature<br>Video is monitored, so keep it clean!</p>
+            <p class="adult-link">Go to <a href="#" onclick="showAdultWarning()">an adult site</a> instead if that's what you want</p>
+        </header>
+
+        <main>
+            <div class="button-container">
+                <button class="chat-btn" onclick="startTextChat()">Start a chat</button>
+                <button class="video-btn" onclick="startVideoChat()">Video</button>
             </div>
-            
-            <div class="main-buttons">
-                <button class="btn btn-primary" onclick="showTermsForChat()">Start a chat</button>
-                <button class="btn btn-secondary" onclick="showTermsForVideo()">Video</button>
-            </div>
-            
+
             <div class="interests-section">
                 <p>Meet strangers with your interests!</p>
                 <input type="text" placeholder="Add your interests (optional)" class="interests-input">
                 <div class="dropdown">
                     <button class="dropdown-btn">▶ College student chat</button>
                     <div class="dropdown-content">
-                        <p>Omegle (<em>oh-meg-ull</em>) is a great way to meet new friends, even while social distancing.</p>
+                        <p>Omegle (oh·meg·ull) is a great way to meet new friends, even while practicing social distancing.</p>
                     </div>
                 </div>
             </div>
-        </div>
-        
+        </main>
+
         <footer>
             <p>© 2025 Omegle Random Chat. All rights reserved. | 
-                <a href="#" onclick="showTermsPolicy()">Terms & Conditions</a> | 
-                <a href="#" onclick="showPrivacyPolicy()">Privacy Policy</a> | 
-                <a href="#" onclick="showDMCADisclaimer()">DMCA Disclaimer</a>
+                <a href="#" onclick="showTerms()">Terms & Conditions</a> | 
+                <a href="#" onclick="showPrivacy()">Privacy Policy</a> | 
+                <a href="#" onclick="showDMCA()">DMCA Disclaimer</a>
             </p>
         </footer>
     </div>
 
-    <!-- Terms Modal -->
+    <!-- Terms and Conditions Modal -->
     <div id="termsModal" class="modal">
         <div class="modal-content">
             <h3>Terms and Conditions</h3>
             <p>By using this website, you agree that any actions you take during your use — including text, audio, photo, video communication — are solely your responsibility. Any illegal, abusive, or inappropriate activity is strictly prohibited. The creator or owner of this website will not be held liable for user actions. In case of any violation of laws, the individual user will be solely responsible and may be reported to authorities if required.</p>
-            <button class="btn btn-primary" onclick="agreeTerms()">Agree</button>
+            <div class="modal-buttons">
+                <button class="agree-btn" onclick="agreeTerms()">Agree</button>
+                <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+            </div>
         </div>
     </div>
 
     <!-- Chat Interface -->
-    <div id="chatPage" class="page">
+    <div id="chatInterface" class="chat-interface hidden">
         <div class="chat-header">
-            <h2>Omegle Chat</h2>
-            <div class="connection-status" id="connectionStatus">Connecting...</div>
+            <h3>Chat with Stranger</h3>
+            <div class="status" id="connectionStatus">Connecting...</div>
         </div>
-        
-        <div class="chat-container">
-            <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-container">
+            <button class="attachment-btn" onclick="selectFile()">+</button>
+            <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()">Send</button>
+            <button class="connect-btn" id="connectBtn" onclick="toggleConnection()">Connect</button>
         </div>
-        
-        <div class="chat-input-section">
-            <div class="typing-indicator" id="typingIndicator"></div>
-            <div class="chat-input-container">
-                <input type="text" id="messageInput" placeholder="Type your message..." class="message-input">
-                <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
-                <button onclick="document.getElementById('fileInput').click()" class="attach-btn">
-                    <i data-lucide="paperclip"></i>
-                </button>
-                <button onclick="sendMessage()" class="send-btn">Send</button>
-            </div>
-        </div>
-        
-        <div class="chat-controls">
-            <button onclick="newChat()" class="btn btn-secondary">New Chat</button>
-            <button onclick="endChat()" class="btn btn-danger">End Chat</button>
-        </div>
+        <input type="file" id="fileInput" accept="image/*,video/*" style="display:none" onchange="handleFileSelect(event)">
     </div>
 
     <!-- Video Chat Interface -->
-    <div id="videoPage" class="page">
+    <div id="videoInterface" class="video-interface hidden">
         <div class="video-header">
-            <h2>Omegle Stranger</h2>
-            <div class="connection-status" id="videoConnectionStatus">Connecting...</div>
+            <h3>Omegle Stranger</h3>
+            <div class="status" id="videoConnectionStatus">Connecting...</div>
         </div>
-        
         <div class="video-container">
-            <div class="video-section">
-                <video id="localVideo" autoplay muted class="video-feed"></video>
-                <video id="remoteVideo" autoplay class="video-feed"></video>
-            </div>
-            
-            <div class="video-chat-messages" id="videoChatMessages"></div>
+            <video id="localVideo" autoplay muted></video>
+            <video id="remoteVideo" autoplay></video>
         </div>
-        
-        <div class="video-input-section">
-            <div class="video-typing-indicator" id="videoTypingIndicator"></div>
-            <div class="video-input-container">
-                <input type="text" id="videoMessageInput" placeholder="Type your message..." class="message-input">
-                <input type="file" id="videoFileInput" accept="image/*,video/*" style="display: none;">
-                <button onclick="document.getElementById('videoFileInput').click()" class="attach-btn">
-                    <i data-lucide="paperclip"></i>
-                </button>
-                <button onclick="sendVideoMessage()" class="send-btn">Send</button>
-            </div>
+        <div class="video-chat-messages" id="videoChatMessages"></div>
+        <div class="video-input-container">
+            <button class="attachment-btn" onclick="selectVideoFile()">+</button>
+            <input type="text" id="videoMessageInput" placeholder="Type a message..." onkeypress="handleVideoKeyPress(event)">
+            <button class="send-btn" onclick="sendVideoMessage()">Send</button>
+            <button class="connect-btn" id="videoConnectBtn" onclick="toggleVideoConnection()">Connect</button>
         </div>
-        
-        <div class="video-controls">
-            <button onclick="toggleMic()" class="control-btn" id="micBtn">
-                <i data-lucide="mic"></i>
-                <span class="tooltip">Toggle Mic</span>
-            </button>
-            <button onclick="toggleCamera()" class="control-btn" id="cameraBtn">
-                <i data-lucide="video"></i>
-                <span class="tooltip">Toggle Camera</span>
-            </button>
-            <button onclick="endVideoCall()" class="control-btn end-call">
-                <i data-lucide="phone-off"></i>
-                <span class="tooltip">End Call</span>
-            </button>
-        </div>
+        <input type="file" id="videoFileInput" accept="image/*,video/*" style="display:none" onchange="handleVideoFileSelect(event)">
     </div>
 
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-        
-        // Video control states
-        let micActive = true;
-        let cameraActive = true;
-        
-        function toggleMic() {
-            micActive = !micActive;
-            const micBtn = document.getElementById('micBtn');
-            const micIcon = micBtn.querySelector('i');
-            
-            if (micActive) {
-                micIcon.setAttribute('data-lucide', 'mic');
-                micBtn.classList.remove('active');
-                // Implement actual mic enable logic here
-                console.log('Mic enabled');
-            } else {
-                micIcon.setAttribute('data-lucide', 'mic-off');
-                micBtn.classList.add('active');
-                // Implement actual mic disable logic here
-                console.log('Mic disabled');
-            }
-            
-            // Refresh the icon
-            lucide.createIcons();
-        }
-        
-        function toggleCamera() {
-            cameraActive = !cameraActive;
-            const cameraBtn = document.getElementById('cameraBtn');
-            const cameraIcon = cameraBtn.querySelector('i');
-            const localVideo = document.getElementById('localVideo');
-            
-            if (cameraActive) {
-                cameraIcon.setAttribute('data-lucide', 'video');
-                cameraBtn.classList.remove('active');
-                // Implement actual camera enable logic here
-                localVideo.style.opacity = '1';
-                console.log('Camera enabled');
-            } else {
-                cameraIcon.setAttribute('data-lucide', 'video-off');
-                cameraBtn.classList.add('active');
-                // Implement actual camera disable logic here
-                localVideo.style.opacity = '0';
-                console.log('Camera disabled');
-            }
-            
-            // Refresh the icon
-            lucide.createIcons();
-        }
-        
-        function endVideoCall() {
-            // Implement end call logic here
-            console.log('Call ended');
-            // For demo purposes, just go back to home
-            document.getElementById('videoPage').classList.remove('active');
-            document.getElementById('homePage').classList.add('active');
-        }
-        
-        // Existing functions (keep these as they were)
-        function showTermsForChat() {
-            document.getElementById('termsModal').style.display = 'block';
-            currentAction = 'chat';
-        }
-        
-        function showTermsForVideo() {
-            document.getElementById('termsModal').style.display = 'block';
-            currentAction = 'video';
-        }
-        
-        function agreeTerms() {
-            document.getElementById('termsModal').style.display = 'none';
-            if (currentAction === 'chat') {
-                document.getElementById('homePage').classList.remove('active');
-                document.getElementById('chatPage').classList.add('active');
-            } else if (currentAction === 'video') {
-                document.getElementById('homePage').classList.remove('active');
-                document.getElementById('videoPage').classList.add('active');
-                // Initialize video stream
-                initVideoStream();
-            }
-        }
-        
-        function initVideoStream() {
-            // This would initialize the actual video stream
-            console.log('Initializing video stream...');
-            // For demo purposes, we'll just show black video feeds
-        }
-        
-        // Other existing functions...
-        let currentAction = '';
-        
-        function showAdultWarning() {
-            alert("This is just a demo. No adult content available.");
-        }
-        
-        function showTermsPolicy() {
-            alert("Terms and conditions would be displayed here.");
-        }
-        
-        function showPrivacyPolicy() {
-            alert("Privacy policy would be displayed here.");
-        }
-        
-        function showDMCADisclaimer() {
-            alert("DMCA disclaimer would be displayed here.");
-        }
-        
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const messages = document.getElementById('chatMessages');
-            if (input.value.trim() !== '') {
-                messages.innerHTML += `<div class="message sent">You: ${input.value}</div>`;
-                input.value = '';
-                // Simulate response
-                setTimeout(() => {
-                    messages.innerHTML += `<div class="message received">Stranger: Hello there!</div>`;
-                    messages.scrollTop = messages.scrollHeight;
-                }, 1000);
-                messages.scrollTop = messages.scrollHeight;
-            }
-        }
-        
-        function sendVideoMessage() {
-            const input = document.getElementById('videoMessageInput');
-            const messages = document.getElementById('videoChatMessages');
-            if (input.value.trim() !== '') {
-                messages.innerHTML += `<div class="message sent">You: ${input.value}</div>`;
-                input.value = '';
-                // Simulate response
-                setTimeout(() => {
-                    messages.innerHTML += `<div class="message received">Stranger: Nice to see you!</div>`;
-                    messages.scrollTop = messages.scrollHeight;
-                }, 1000);
-                messages.scrollTop = messages.scrollHeight;
-            }
-        }
-        
-        function newChat() {
-            document.getElementById('chatMessages').innerHTML = '';
-            document.getElementById('connectionStatus').textContent = 'Connecting to new stranger...';
-            // Simulate connection
-            setTimeout(() => {
-                document.getElementById('connectionStatus').textContent = 'Connected';
-                document.getElementById('chatMessages').innerHTML = 
-                    `<div class="message info">You are now chatting with a random stranger. Say hi!</div>`;
-            }, 1500);
-        }
-        
-        function endChat() {
-            document.getElementById('chatPage').classList.remove('active');
-            document.getElementById('homePage').classList.add('active');
-        }
-    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
