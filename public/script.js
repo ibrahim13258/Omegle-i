@@ -1,386 +1,425 @@
-// DOM Elements
-const homePage = document.getElementById('homePage');
-const chatPage = document.getElementById('chatPage');
-const videoPage = document.getElementById('videoPage');
-const termsModal = document.getElementById('termsModal');
-const connectionStatus = document.getElementById('connectionStatus');
-const videoConnectionStatus = document.getElementById('videoConnectionStatus');
-const chatMessages = document.getElementById('chatMessages');
-const videoChatMessages = document.getElementById('videoChatMessages');
-const messageInput = document.getElementById('messageInput');
-const videoMessageInput = document.getElementById('videoMessageInput');
-const fileInput = document.getElementById('fileInput');
-const videoFileInput = document.getElementById('videoFileInput');
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-const micBtn = document.getElementById('micBtn');
-const cameraBtn = document.getElementById('cameraBtn');
+ 
+// Global variables
+let socket;
+let localStream;
+let remoteStream;
+let peerConnection;
+let currentChatType = null;
+let isConnected = false;
 
-// State variables
-let currentAction = '';
-let micActive = true;
-let cameraActive = true;
-let localStream = null;
-let peerConnection = null;
-let dataChannel = null;
-
-// Initialize the app
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Lucide icons
-    lucide.createIcons();
-    
-    // Set up event listeners
-    setupEventListeners();
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSocket();
 });
 
-function setupEventListeners() {
-    // Message input keypress (Enter to send)
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+// Socket initialization
+function initializeSocket() {
+    socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connected to server');
     });
     
-    videoMessageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendVideoMessage();
+    socket.on('matched', function() {
+        updateStatus('Connected', 'connected');
+        isConnected = true;
+        updateConnectButton();
     });
     
-    // File input changes
-    fileInput.addEventListener('change', handleFileUpload);
-    videoFileInput.addEventListener('change', handleVideoFileUpload);
+    socket.on('message', function(data) {
+        displayMessage(data.message, 'stranger');
+    });
     
-    // Simulate connection status changes
-    simulateConnectionStatus();
-}
-
-// Navigation functions
-function showTermsForChat() {
-    currentAction = 'chat';
-    termsModal.style.display = 'block';
-}
-
-function showTermsForVideo() {
-    currentAction = 'video';
-    termsModal.style.display = 'block';
-}
-
-function agreeTerms() {
-    termsModal.style.display = 'none';
+    socket.on('user-disconnected', function() {
+        updateStatus('Stranger disconnected', 'disconnected');
+        isConnected = false;
+        updateConnectButton();
+    });
     
-    if (currentAction === 'chat') {
-        homePage.classList.remove('active');
-        chatPage.classList.add('active');
-        startChat();
-    } else if (currentAction === 'video') {
-        homePage.classList.remove('active');
-        videoPage.classList.add('active');
-        startVideoCall();
-    }
-}
-
-// Chat functions
-function startChat() {
-    connectionStatus.textContent = 'Connecting...';
-    
-    // Simulate connection process
-    setTimeout(() => {
-        connectionStatus.textContent = 'Connected';
-        addSystemMessage('You are now chatting with a random stranger. Say hi!');
-    }, 1500);
-}
-
-function sendMessage() {
-    const message = messageInput.value.trim();
-    if (message) {
-        addMessage(message, 'sent');
-        messageInput.value = '';
-        
-        // Simulate response after a delay
+    socket.on('typing', function() {
+        updateStatus('User is typing...', 'typing');
         setTimeout(() => {
-            const responses = [
-                "Hello there!",
-                "How are you today?",
-                "Nice to meet you!",
-                "What brings you here?",
-                "I'm just browsing around."
-            ];
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            addMessage(randomResponse, 'received');
-        }, 1000 + Math.random() * 2000);
+            if (isConnected) {
+                updateStatus('Connected', 'connected');
+            }
+        }, 2000);
+    });
+    
+    socket.on('file-received', function(data) {
+        displayFileMessage(data, 'stranger');
+    });
+    
+    // Video chat events
+    socket.on('video-offer', handleVideoOffer);
+    socket.on('video-answer', handleVideoAnswer);
+    socket.on('ice-candidate', handleIceCandidate);
+}
+
+// Start text chat
+function startTextChat() {
+    currentChatType = 'text';
+    showTermsModal();
+}
+
+// Start video chat
+function startVideoChat() {
+    currentChatType = 'video';
+    showTermsModal();
+}
+
+// Show terms modal
+function showTermsModal() {
+    document.getElementById('termsModal').style.display = 'block';
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('termsModal').style.display = 'none';
+}
+
+// Agree to terms
+function agreeTerms() {
+    closeModal();
+    if (currentChatType === 'text') {
+        openChatInterface();
+    } else if (currentChatType === 'video') {
+        openVideoInterface();
     }
 }
 
-function addMessage(text, type) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', type);
-    messageDiv.textContent = (type === 'sent' ? 'You: ' : 'Stranger: ') + text;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+// Open chat interface
+function openChatInterface() {
+    document.querySelector('.container').style.display = 'none';
+    document.getElementById('chatInterface').classList.remove('hidden');
+    socket.emit('join-text-chat');
+    updateStatus('Looking for stranger...', 'disconnected');
 }
 
-function addSystemMessage(text) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', 'info');
-    messageDiv.textContent = text;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function newChat() {
-    chatMessages.innerHTML = '';
-    connectionStatus.textContent = 'Connecting to new stranger...';
-    
-    // Simulate new connection
-    setTimeout(() => {
-        connectionStatus.textContent = 'Connected';
-        addSystemMessage('You are now chatting with a new stranger. Say hi!');
-    }, 1500);
-}
-
-function endChat() {
-    chatPage.classList.remove('active');
-    homePage.classList.add('active');
-}
-
-// Video Call functions
-async function startVideoCall() {
-    videoConnectionStatus.textContent = 'Connecting...';
+// Open video interface
+async function openVideoInterface() {
+    document.querySelector('.container').style.display = 'none';
+    document.getElementById('videoInterface').classList.remove('hidden');
     
     try {
-        // Get user media (simulated in this demo)
-        localStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: true
-        });
-        
-        // For demo purposes, we'll just show black video
-        localVideo.srcObject = localStream;
-        remoteVideo.srcObject = createBlackVideoStream();
-        
-        // Simulate connection process
-        setTimeout(() => {
-            videoConnectionStatus.textContent = 'Connected';
-            addVideoSystemMessage('You are now connected with a stranger.');
-            
-            // Initialize WebRTC (simulated)
-            initializeWebRTC();
-        }, 2000);
-    } catch (err) {
-        console.error('Error accessing media devices:', err);
-        videoConnectionStatus.textContent = 'Failed to access camera/mic';
+        await requestMediaPermissions();
+        socket.emit('join-video-chat');
+        updateVideoStatus('Looking for stranger...', 'disconnected');
+    } catch (error) {
+        alert('Camera and microphone access required for video chat');
+        goBackToHome();
     }
 }
 
-function createBlackVideoStream() {
-    // Create a black video stream for demo purposes
-    const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    const stream = canvas.captureStream();
-    return stream;
+// Request media permissions
+async function requestMediaPermissions() {
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: true 
+        });
+        document.getElementById('localVideo').srcObject = localStream;
+        return true;
+    } catch (error) {
+        throw new Error('Media access denied');
+    }
 }
 
-function initializeWebRTC() {
-    // In a real app, this would set up RTCPeerConnection
-    // For demo, we'll just simulate the connection
-    peerConnection = {
-        // Simulated peer connection
-        createDataChannel: function() {
-            dataChannel = {
-                send: function(message) {
-                    console.log('Message sent:', message);
-                    // Simulate receiving a message
-                    setTimeout(() => {
-                        const event = { data: "Thanks for your message!" };
-                        if (dataChannel.onmessage) dataChannel.onmessage(event);
-                    }, 1000);
-                },
-                onmessage: null,
-                onopen: null
+// Send message
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (message && isConnected) {
+        socket.emit('message', message);
+        displayMessage(message, 'user');
+        input.value = '';
+    }
+}
+
+// Send video message
+function sendVideoMessage() {
+    const input = document.getElementById('videoMessageInput');
+    const message = input.value.trim();
+    
+    if (message && isConnected) {
+        socket.emit('message', message);
+        displayVideoMessage(message, 'user');
+        input.value = '';
+    }
+}
+
+// Handle key press
+function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    } else {
+        socket.emit('typing');
+    }
+}
+
+// Handle video key press
+function handleVideoKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendVideoMessage();
+    } else {
+        socket.emit('typing');
+    }
+}
+
+// Display message
+function displayMessage(message, sender) {
+    const messagesContainer = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+    messageDiv.textContent = message;
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Display video message
+function displayVideoMessage(message, sender) {
+    const messagesContainer = document.getElementById('videoChatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+    messageDiv.textContent = message;
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Update status
+function updateStatus(text, className) {
+    const status = document.getElementById('connectionStatus');
+    if (status) {
+        status.textContent = text;
+        status.className = `status ${className}`;
+    }
+}
+
+// Update video status
+function updateVideoStatus(text, className) {
+    const status = document.getElementById('videoConnectionStatus');
+    if (status) {
+        status.textContent = text;
+        status.className = `status ${className}`;
+    }
+}
+
+// Toggle connection
+function toggleConnection() {
+    if (isConnected) {
+        socket.emit('disconnect-chat');
+        updateStatus('Disconnected', 'disconnected');
+        isConnected = false;
+    } else {
+        socket.emit('join-text-chat');
+        updateStatus('Looking for stranger...', 'disconnected');
+    }
+    updateConnectButton();
+}
+
+// Toggle video connection
+function toggleVideoConnection() {
+    if (isConnected) {
+        socket.emit('disconnect-chat');
+        updateVideoStatus('Disconnected', 'disconnected');
+        isConnected = false;
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+    } else {
+        socket.emit('join-video-chat');
+        updateVideoStatus('Looking for stranger...', 'disconnected');
+    }
+    updateVideoConnectButton();
+}
+
+// Update connect button
+function updateConnectButton() {
+    const btn = document.getElementById('connectBtn');
+    if (isConnected) {
+        btn.textContent = 'Disconnect';
+        btn.classList.add('disconnect');
+    } else {
+        btn.textContent = 'Connect';
+        btn.classList.remove('disconnect');
+    }
+}
+
+// Update video connect button
+function updateVideoConnectButton() {
+    const btn = document.getElementById('videoConnectBtn');
+    if (isConnected) {
+        btn.textContent = 'Disconnect';
+        btn.classList.add('disconnect');
+    } else {
+        btn.textContent = 'Connect';
+        btn.classList.remove('disconnect');
+    }
+}
+
+// File selection
+function selectFile() {
+    document.getElementById('fileInput').click();
+}
+
+function selectVideoFile() {
+    document.getElementById('videoFileInput').click();
+}
+
+// Handle file select
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file && file.size <= 50 * 1024 * 1024) { // 50MB limit
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const fileData = {
+                name: file.name,
+                type: file.type,
+                data: e.target.result
             };
-            
-            // Simulate data channel opening
-            setTimeout(() => {
-                if (dataChannel.onopen) dataChannel.onopen();
-            }, 500);
-            
-            return dataChannel;
+            socket.emit('file-upload', fileData);
+            displayFileMessage(fileData, 'user');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert('File size must be less than 50MB');
+    }
+}
+
+// Handle video file select
+function handleVideoFileSelect(event) {
+    const file = event.target.files[0];
+    if (file && file.size <= 50 * 1024 * 1024) { // 50MB limit
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const fileData = {
+                name: file.name,
+                type: file.type,
+                data: e.target.result
+            };
+            socket.emit('file-upload', fileData);
+            displayVideoFileMessage(fileData, 'user');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert('File size must be less than 50MB');
+    }
+}
+
+// Display file message
+function displayFileMessage(fileData, sender) {
+    const messagesContainer = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+    
+    if (fileData.type.startsWith('image/')) {
+        messageDiv.innerHTML = `<img src="${fileData.data}" alt="${fileData.name}" style="max-width: 200px; border-radius: 10px;">`;
+    } else if (fileData.type.startsWith('video/')) {
+        messageDiv.innerHTML = `<video src="${fileData.data}" controls style="max-width: 200px; border-radius: 10px;"></video>`;
+    } else {
+        messageDiv.textContent = `File: ${fileData.name}`;
+    }
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Display video file message
+function displayVideoFileMessage(fileData, sender) {
+    const messagesContainer = document.getElementById('videoChatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+    
+    if (fileData.type.startsWith('image/')) {
+        messageDiv.innerHTML = `<img src="${fileData.data}" alt="${fileData.name}" style="max-width: 150px; border-radius: 10px;">`;
+    } else if (fileData.type.startsWith('video/')) {
+        messageDiv.innerHTML = `<video src="${fileData.data}" controls style="max-width: 150px; border-radius: 10px;"></video>`;
+    } else {
+        messageDiv.textContent = `File: ${fileData.name}`;
+    }
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// WebRTC functions
+async function createPeerConnection() {
+    peerConnection = new RTCPeerConnection({
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }
+        ]
+    });
+    
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            socket.emit('ice-candidate', event.candidate);
         }
     };
     
-    // Create a data channel for text chat
-    dataChannel = peerConnection.createDataChannel('chat');
-    dataChannel.onmessage = handleDataChannelMessage;
-    dataChannel.onopen = handleDataChannelOpen;
-}
-
-function handleDataChannelOpen() {
-    console.log('Data channel opened');
-    addVideoSystemMessage('Chat connection established');
-}
-
-function handleDataChannelMessage(event) {
-    addVideoMessage(event.data, 'received');
-}
-
-function sendVideoMessage() {
-    const message = videoMessageInput.value.trim();
-    if (message && dataChannel) {
-        addVideoMessage(message, 'sent');
-        videoMessageInput.value = '';
-        
-        // Send through data channel (simulated)
-        dataChannel.send(message);
+    peerConnection.ontrack = (event) => {
+        document.getElementById('remoteVideo').srcObject = event.streams[0];
+    };
+    
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
     }
 }
 
-function addVideoMessage(text, type) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', type);
-    messageDiv.textContent = (type === 'sent' ? 'You: ' : 'Stranger: ') + text;
-    videoChatMessages.appendChild(messageDiv);
-    videoChatMessages.scrollTop = videoChatMessages.scrollHeight;
+async function handleVideoOffer(offer) {
+    await createPeerConnection();
+    await peerConnection.setRemoteDescription(offer);
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit('video-answer', answer);
 }
 
-function addVideoSystemMessage(text) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', 'info');
-    messageDiv.textContent = text;
-    videoChatMessages.appendChild(messageDiv);
-    videoChatMessages.scrollTop = videoChatMessages.scrollHeight;
+async function handleVideoAnswer(answer) {
+    await peerConnection.setRemoteDescription(answer);
 }
 
-// Control functions
-function toggleMic() {
-    micActive = !micActive;
-    const micIcon = micBtn.querySelector('i');
-    
-    if (micActive) {
-        micIcon.setAttribute('data-lucide', 'mic');
-        micBtn.classList.remove('active');
-        if (localStream) {
-            localStream.getAudioTracks().forEach(track => {
-                track.enabled = true;
-            });
-        }
-    } else {
-        micIcon.setAttribute('data-lucide', 'mic-off');
-        micBtn.classList.add('active');
-        if (localStream) {
-            localStream.getAudioTracks().forEach(track => {
-                track.enabled = false;
-            });
-        }
+async function handleIceCandidate(candidate) {
+    if (peerConnection) {
+        await peerConnection.addIceCandidate(candidate);
     }
-    
-    lucide.createIcons();
 }
 
-function toggleCamera() {
-    cameraActive = !cameraActive;
-    const cameraIcon = cameraBtn.querySelector('i');
-    
-    if (cameraActive) {
-        cameraIcon.setAttribute('data-lucide', 'video');
-        cameraBtn.classList.remove('active');
-        if (localStream) {
-            localStream.getVideoTracks().forEach(track => {
-                track.enabled = true;
-            });
-            localVideo.style.opacity = '1';
-        }
-    } else {
-        cameraIcon.setAttribute('data-lucide', 'video-off');
-        cameraBtn.classList.add('active');
-        if (localStream) {
-            localStream.getVideoTracks().forEach(track => {
-                track.enabled = false;
-            });
-            localVideo.style.opacity = '0';
-        }
-    }
-    
-    lucide.createIcons();
+// Footer functions
+function showTerms() {
+    alert('By using this website, you agree to comply with all applicable laws and not to use the service for any illegal activities. Users must be at least 18 years old or have parental permission to access the website. We reserve the right to terminate or restrict your access at any time for violating our policies or engaging in inappropriate behavior. You are solely responsible for your interactions and activities on this platform.');
 }
 
-function endVideoCall() {
-    // Stop all media tracks
+function showPrivacy() {
+    alert('We value your privacy. This website may collect minimal data such as IP address, browser type, and usage activity for analytical and security purposes. We do not sell or share your personal information with third parties, except as required by law. By using this site, you consent to the collection and use of information in accordance with this policy.');
+}
+
+function showDMCA() {
+    alert('We respect copyright laws and comply with the Digital Millennium Copyright Act (DMCA). If you believe that any content on this site infringes upon your copyright, please contact us with proper documentation, and we will take appropriate action.');
+}
+
+function showAdultWarning() {
+    alert('This is a family-friendly platform. Please use appropriate language and behavior.');
+}
+
+// Go back to home
+function goBackToHome() {
+    document.querySelector('.container').style.display = 'block';
+    document.getElementById('chatInterface').classList.add('hidden');
+    document.getElementById('videoInterface').classList.add('hidden');
+    
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
     }
     
-    // Clean up WebRTC connection (simulated)
-    peerConnection = null;
-    dataChannel = null;
-    
-    // Reset UI
-    localVideo.srcObject = null;
-    remoteVideo.srcObject = null;
-    videoChatMessages.innerHTML = '';
-    videoMessageInput.value = '';
-    
-    // Return to home page
-    videoPage.classList.remove('active');
-    homePage.classList.add('active');
-}
-
-// File handling
-function handleFileUpload(e) {
-    const file = e.target.files[0];
-    if (file) {
-        addSystemMessage(`File uploaded: ${file.name} (${formatFileSize(file.size)})`);
-        // In a real app, you would send the file to the peer
-    }
-    e.target.value = ''; // Reset input
-}
-
-function handleVideoFileUpload(e) {
-    const file = e.target.files[0];
-    if (file) {
-        addVideoSystemMessage(`File uploaded: ${file.name} (${formatFileSize(file.size)})`);
-        // In a real app, you would send the file to the peer
-    }
-    e.target.value = ''; // Reset input
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
-}
-
-// Simulate connection status changes
-function simulateConnectionStatus() {
-    if (connectionStatus) {
-        setTimeout(() => {
-            connectionStatus.textContent = 'Connected';
-        }, 2000);
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
     }
     
-    if (videoConnectionStatus) {
-        setTimeout(() => {
-            videoConnectionStatus.textContent = 'Connected';
-        }, 2000);
-    }
+    isConnected = false;
+    currentChatType = null;
 }
 
-// Other UI functions
-function showAdultWarning() {
-    alert("This is just a demo. No adult content available.");
-}
-
-function showTermsPolicy() {
-    alert("Terms and conditions would be displayed here.");
-}
-
-function showPrivacyPolicy() {
-    alert("Privacy policy would be displayed here.");
-}
-
-function showDMCADisclaimer() {
-    alert("DMCA disclaimer would be displayed here.");
-}
