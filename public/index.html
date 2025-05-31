@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    <!-- Signup Page -->
+    <!-- Multi-Step Signup Page -->
     <div id="signupPage" class="page">
         <div class="signup-container">
             <div class="signup-card">
@@ -56,33 +56,150 @@
                     <h1>Instronova</h1>
                     <p>Join our community</p>
                 </div>
-                <form id="signupForm" class="signup-form">
-                    <div class="input-group">
-                        <input type="text" id="signupName" placeholder="Full Name" required>
-                        <i class="fas fa-user"></i>
+                
+                <!-- Progress Indicator -->
+                <div class="progress-indicator">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
                     </div>
-                    <div class="input-group">
-                        <input type="text" id="signupUsername" placeholder="Username" required>
-                        <i class="fas fa-at"></i>
+                    <div class="step-indicators">
+                        <div class="step active" data-step="1">
+                            <span>1</span>
+                            <label>Name</label>
+                        </div>
+                        <div class="step" data-step="2">
+                            <span>2</span>
+                            <label>Username</label>
+                        </div>
+                        <div class="step" data-step="3">
+                            <span>3</span>
+                            <label>Email</label>
+                        </div>
+                        <div class="step" data-step="4">
+                            <span>4</span>
+                            <label>Phone</label>
+                        </div>
+                        <div class="step" data-step="5">
+                            <span>5</span>
+                            <label>Password</label>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <input type="email" id="signupEmail" placeholder="Email" required>
-                        <i class="fas fa-envelope"></i>
+                </div>
+
+                <!-- Multi-Step Form -->
+                <div class="multi-step-form">
+                    <!-- Step 1: Full Name -->
+                    <div class="form-step active" data-step="1">
+                        <h3>What's your full name?</h3>
+                        <div class="input-group">
+                            <input type="text" id="stepName" placeholder="Enter your full name" required>
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="step-buttons">
+                            <button type="button" class="next-btn" onclick="nextStep(1)">
+                                <span>Next</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <input type="tel" id="signupPhone" placeholder="Phone Number" required>
-                        <i class="fas fa-phone"></i>
+
+                    <!-- Step 2: Username -->
+                    <div class="form-step" data-step="2">
+                        <h3>Choose a username</h3>
+                        <p class="step-description">Only lowercase letters, numbers, and underscores allowed</p>
+                        <div class="input-group">
+                            <input type="text" id="stepUsername" placeholder="username" required>
+                            <i class="fas fa-at"></i>
+                            <div class="validation-icon" id="usernameValidation"></div>
+                        </div>
+                        <div class="error-message" id="usernameError"></div>
+                        <div class="step-buttons">
+                            <button type="button" class="back-btn" onclick="previousStep(2)">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </button>
+                            <button type="button" class="next-btn" onclick="nextStep(2)" disabled>
+                                <span>Next</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <input type="password" id="signupPassword" placeholder="Password" required>
-                        <i class="fas fa-lock"></i>
-                        <i class="fas fa-eye toggle-password" onclick="togglePassword('signupPassword')"></i>
+
+                    <!-- Step 3: Email -->
+                    <div class="form-step" data-step="3">
+                        <h3>What's your email?</h3>
+                        <p class="step-description">We'll use this to send you important updates</p>
+                        <div class="input-group">
+                            <input type="email" id="stepEmail" placeholder="Enter your email">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="step-buttons">
+                            <button type="button" class="back-btn" onclick="previousStep(3)">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </button>
+                            <button type="button" class="skip-btn" onclick="skipStep(3)">Skip</button>
+                            <button type="button" class="next-btn" onclick="nextStep(3)">
+                                <span>Next</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
-                    <button type="submit" class="signup-btn">
-                        <span>Next</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </form>
+
+                    <!-- Step 4: Mobile Number -->
+                    <div class="form-step" data-step="4">
+                        <h3>Verify your phone number</h3>
+                        <p class="step-description">We'll send you an OTP to verify your number</p>
+                        <div class="input-group">
+                            <input type="tel" id="stepPhone" placeholder="Enter your mobile number" required>
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="otp-section" id="otpSection" style="display: none;">
+                            <div class="input-group">
+                                <input type="text" id="stepOTP" placeholder="Enter 6-digit OTP" maxlength="6">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="otp-timer">
+                                OTP expires in <span id="otpTimer">60:00</span>
+                                <button type="button" class="resend-btn" id="resendOTP" onclick="resendOTP()" disabled>Resend OTP</button>
+                            </div>
+                        </div>
+                        <div class="error-message" id="phoneError"></div>
+                        <div class="step-buttons">
+                            <button type="button" class="back-btn" onclick="previousStep(4)">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </button>
+                            <button type="button" class="next-btn" id="phoneNextBtn" onclick="sendOTP()">
+                                <span>Send OTP</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Password -->
+                    <div class="form-step" data-step="5">
+                        <h3>Create a password</h3>
+                        <p class="step-description">Choose a strong password with at least 6 characters</p>
+                        <div class="input-group">
+                            <input type="password" id="stepPassword" placeholder="Create password" required>
+                            <i class="fas fa-lock"></i>
+                            <i class="fas fa-eye toggle-password" onclick="togglePassword('stepPassword')"></i>
+                        </div>
+                        <div class="password-strength" id="passwordStrength"></div>
+                        <div class="step-buttons">
+                            <button type="button" class="back-btn" onclick="previousStep(5)">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Back</span>
+                            </button>
+                            <button type="button" class="finish-btn" onclick="completeSignup()">
+                                <span>Finish Signup</span>
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="signup-links">
                     <p>Already have an account? <a href="#" onclick="showPage('loginPage')">Log in</a></p>
                 </div>
@@ -412,27 +529,10 @@
                 <div class="input-group">
                     <input type="email" id="forgotEmail" placeholder="Enter your email" required>
                 </div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 1rem 0;">
+                    We'll send an OTP to your registered phone number
+                </p>
                 <button type="submit" class="modal-btn">Send OTP</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- OTP Modal -->
-    <div id="otpModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Enter OTP</h3>
-                <span class="close" onclick="closeOtpModal()">&times;</span>
-            </div>
-            <p>OTP expires in <span id="otpTimer">30</span> seconds</p>
-            <form id="otpForm">
-                <div class="otp-inputs">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 0)">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 1)">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 2)">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 3)">
-                </div>
-                <button type="submit" class="modal-btn">Verify OTP</button>
             </form>
         </div>
     </div>
@@ -520,4 +620,4 @@
 
     <script src="script.js"></script>
 </body>
-</html>
+</html> 
