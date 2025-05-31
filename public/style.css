@@ -1,4 +1,4 @@
-
+ 
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -207,7 +207,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* Signup Page */
+/* Multi-Step Signup Page */
 .signup-container {
     min-height: 100vh;
     display: flex;
@@ -223,7 +223,7 @@ body {
     border-radius: 20px;
     padding: 2rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 450px;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: var(--shadow);
@@ -232,6 +232,541 @@ body {
 .logo p {
     color: rgba(255, 255, 255, 0.8);
     margin-top: 0.5rem;
+}
+
+/* Progress Indicator */
+.progress-indicator {
+    margin-bottom: 2rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    width: 20%;
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.step-indicators {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+}
+
+.step.completed {
+    opacity: 1;
+}
+
+.step span {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.step.active span {
+    background: var(--primary-gradient);
+}
+
+.step.completed span {
+    background: var(--success-color);
+}
+
+.step.completed span::before {
+    content: '✓';
+}
+
+.step label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+/* Multi-Step Form */
+.multi-step-form {
+    position: relative;
+    min-height: 300px;
+}
+
+.form-step {
+    display: none;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+}
+
+.form-step.active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.form-step h3 {
+    color: white;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.step-description {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+.step-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: space-between;
+}
+
+.back-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.next-btn,
+.finish-btn {
+    background: var(--primary-gradient);
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    flex: 1;
+    justify-content: center;
+}
+
+.next-btn:disabled,
+.finish-btn:disabled {
+    background: rgba(255, 255, 255, 0.2);
+    cursor: not-allowed;
+}
+
+.next-btn:hover:not(:disabled),
+.finish-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+}
+
+.skip-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.skip-btn:hover {
+    color: white;
+}
+
+/* Validation Icons */
+.validation-icon {
+    position: absolute;
+    right: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+}
+
+.validation-icon.checking {
+    color: #F59E0B;
+}
+
+.validation-icon.valid {
+    color: var(--success-color);
+}
+
+.validation-icon.invalid {
+    color: var(--danger-color);
+}
+
+.validation-icon.checking::before {
+    content: '⟳';
+    animation: spin 1s linear infinite;
+}
+
+.validation-icon.valid::before {
+    content: '✓';
+}
+
+.validation-icon.invalid::before {
+    content: '✗';
+}
+
+/* Error Messages */
+.error-message {
+    color: var(--danger-color);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    text-align: left;
+    padding: 0 1rem;
+}
+
+/* Country Phone Container */
+.country-phone-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.country-selector {
+    flex: 0 0 auto;
+}
+
+.country-select {
+    padding: 1rem 0.5rem 1rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.9rem;
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.country-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.phone-input-container {
+    flex: 1;
+    position: relative;
+}
+
+.phone-input-container input {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.phone-input-container input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.phone-input-container input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.phone-input-container i {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Enhanced OTP Section */
+.otp-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.otp-section h4 {
+    color: white;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.otp-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.otp-inputs-container {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.otp-digit {
+    width: 45px;
+    height: 50px;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.otp-digit:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+.otp-digit.filled {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.otp-timer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.timer-text {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.resend-btn {
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.resend-btn:disabled {
+    color: rgba(255, 255, 255, 0.5);
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.resend-btn:hover:not(:disabled) {
+    color: #A855F7;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+    margin-top: 1rem;
+    text-align: left;
+    padding: 0 1rem;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.strength-weak .strength-fill {
+    width: 33%;
+    background: var(--danger-color);
+}
+
+.strength-medium .strength-fill {
+    width: 66%;
+    background: #F59E0B;
+}
+
+.strength-strong .strength-fill {
+    width: 100%;
+    background: var(--success-color);
+}
+
+.strength-text {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .step-indicators {
+        gap: 0.5rem;
+    }
+    
+    .step span {
+        width: 25px;
+        height: 25px;
+        font-size: 0.8rem;
+    }
+    
+    .step label {
+        font-size: 0.7rem;
+    }
+    
+    .form-step h3 {
+        font-size: 1.2rem;
+    }
+    
+    .step-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .back-btn {
+        order: 2;
+    }
+    
+    .next-btn,
+    .finish-btn {
+        order: 1;
+    }
+}
+
+/* Enhanced animations for step transitions */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+}
+
+.form-step.slide-in-right {
+    animation: slideInRight 0.3s ease forwards;
+}
+
+.form-step.slide-in-left {
+    animation: slideInLeft 0.3s ease forwards;
+}
+
+.form-step.slide-out-left {
+    animation: slideOutLeft 0.3s ease forwards;
+}
+
+.form-step.slide-out-right {
+    animation: slideOutRight 0.3s ease forwards;
+}
+
+/* Responsive improvements for mobile */
+@media (max-width: 480px) {
+    .country-phone-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .country-select {
+        min-width: 100%;
+    }
+    
+    .otp-inputs-container {
+        gap: 0.3rem;
+    }
+    
+    .otp-digit {
+        width: 40px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
 }
 
 /* Profile Setup Page */
