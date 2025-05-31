@@ -1,11 +1,11 @@
-
-const express = require('express');
+ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +28,13 @@ let posts = [];
 let stories = [];
 let messages = [];
 let notifications = [];
+
+// OTP storage (in production, use Redis or database with TTL)
+let otpStore = new Map(); // { phoneNumber: { otp, expiresAt, attempts } }
+
+// Fast2SMS Configuration (you'll need to set these in Replit Secrets)
+const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || '';
+const FAST2SMS_SENDER_ID = process.env.FAST2SMS_SENDER_ID || 'INSTRONOVA';
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
@@ -77,6 +84,64 @@ const generateId = () => Date.now() + Math.random().toString(36).substr(2, 9);
 const formatUser = (user) => {
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
+};
+
+// OTP utility functions
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+};
+
+const isValidPhoneNumber = (phone) => {
+    // Indian phone number validation (10 digits)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    return phoneRegex.test(phone.replace(/\D/g, ''));
+};
+
+const cleanupExpiredOTPs = () => {
+    const now = new Date();
+    for (const [phone, data] of otpStore.entries()) {
+        if (now > data.expiresAt) {
+            otpStore.delete(phone);
+        }
+    }
+};
+
+// Send SMS using Fast2SMS
+const sendSMS = async (phone, message) => {
+    if (!FAST2SMS_API_KEY) {
+        // For development/testing without API key
+        console.log(`SMS to ${phone}: ${message}`);
+        return { success: true, message: 'SMS sent (dev mode)' };
+    }
+
+    try {
+        const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+            method: 'POST',
+            headers: {
+                'authorization': FAST2SMS_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                route: 'v3',
+                sender_id: FAST2SMS_SENDER_ID,
+                message: message,
+                language: 'english',
+                flash: 0,
+                numbers: phone
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.return === true) {
+            return { success: true, message: 'SMS sent successfully' };
+        } else {
+            throw new Error(data.message || 'Failed to send SMS');
+        }
+    } catch (error) {
+        console.error('SMS Error:', error);
+        return { success: false, error: error.message };
+    }
 };
 
 // Initialize with dummy data
@@ -186,6 +251,41 @@ const initializeDummyData = () => {
 // API Routes
 
 // Authentication Routes
+
+// Check username availability
+app.post('/api/auth/check-username', (req, res) => {
+    try {
+        const { username } = req.body;
+        
+        if (!username) {
+            return res.status(400).json({ error: 'Username is required' });
+        }
+        
+        // Check if username is valid format
+        const usernameRegex = /^[a-z0-9_]+$/;
+        if (!usernameRegex.test(username) || username.length < 3 || username.length > 20) {
+            return res.status(400).json({ 
+                error: 'Username must be 3-20 characters long and contain only lowercase letters, numbers, and underscores',
+                available: false 
+            });
+        }
+        
+        // Check if username already exists
+        const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        
+        if (existingUser) {
+            return res.json({ 
+                available: false, 
+                error: 'Username already taken, please choose another' 
+            });
+        }
+        
+        res.json({ available: true, message: 'Username is available' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, username, email, phone, password } = req.body;
@@ -287,6 +387,166 @@ app.post('/api/auth/verify-otp', (req, res) => {
     } else {
         res.status(400).json({ error: 'Invalid OTP' });
     }
+});
+
+// OTP Routes
+app.post('/api/send-otp', async (req, res) => {
+    try {
+        const { phone } = req.body;
+
+        if (!phone) {
+            return res.status(400).json({ error: 'Phone number is required' });
+        }
+
+        // Clean phone number (remove spaces, special characters)
+        const cleanPhone = phone.replace(/\D/g, '');
+
+        if (!isValidPhoneNumber(cleanPhone)) {
+            return res.status(400).json({ error: 'Invalid phone number format' });
+        }
+
+        // Clean up expired OTPs
+        cleanupExpiredOTPs();
+
+        // Check if OTP was recently sent (rate limiting)
+        const existingOTP = otpStore.get(cleanPhone);
+        if (existingOTP) {
+            const timeDiff = new Date() - new Date(existingOTP.sentAt);
+            if (timeDiff < 60000) { // 1 minute cooldown
+                return res.status(429).json({ 
+                    error: 'Please wait before requesting another OTP',
+                    remainingTime: Math.ceil((60000 - timeDiff) / 1000)
+                });
+            }
+        }
+
+        // Generate new OTP
+        const otp = generateOTP();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+        const sentAt = new Date();
+
+        // Store OTP
+        otpStore.set(cleanPhone, {
+            otp,
+            expiresAt,
+            sentAt,
+            attempts: 0,
+            verified: false
+        });
+
+        // Create SMS message
+        const message = `Your Instronova verification code is: ${otp}. Valid for 5 minutes. Do not share this code.`;
+
+        // Send SMS
+        const smsResult = await sendSMS(cleanPhone, message);
+
+        if (smsResult.success) {
+            res.json({
+                message: 'OTP sent successfully',
+                phone: cleanPhone,
+                expiresIn: 300 // 5 minutes in seconds
+            });
+        } else {
+            // Remove OTP from store if SMS failed
+            otpStore.delete(cleanPhone);
+            res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+        }
+
+    } catch (error) {
+        console.error('Send OTP Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/verify-otp', (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+
+        if (!phone || !otp) {
+            return res.status(400).json({ error: 'Phone number and OTP are required' });
+        }
+
+        // Clean phone number
+        const cleanPhone = phone.replace(/\D/g, '');
+
+        if (!isValidPhoneNumber(cleanPhone)) {
+            return res.status(400).json({ error: 'Invalid phone number format' });
+        }
+
+        // Clean up expired OTPs
+        cleanupExpiredOTPs();
+
+        // Get stored OTP
+        const storedOTPData = otpStore.get(cleanPhone);
+
+        if (!storedOTPData) {
+            return res.status(400).json({ error: 'OTP not found or expired. Please request a new one.' });
+        }
+
+        // Check if OTP is expired
+        if (new Date() > storedOTPData.expiresAt) {
+            otpStore.delete(cleanPhone);
+            return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+        }
+
+        // Check if already verified
+        if (storedOTPData.verified) {
+            return res.status(400).json({ error: 'OTP already used. Please request a new one.' });
+        }
+
+        // Check attempts limit
+        if (storedOTPData.attempts >= 3) {
+            otpStore.delete(cleanPhone);
+            return res.status(400).json({ error: 'Too many incorrect attempts. Please request a new OTP.' });
+        }
+
+        // Verify OTP
+        if (storedOTPData.otp === otp.toString()) {
+            // Mark as verified
+            storedOTPData.verified = true;
+            storedOTPData.verifiedAt = new Date();
+            otpStore.set(cleanPhone, storedOTPData);
+
+            res.json({
+                message: 'OTP verified successfully',
+                phone: cleanPhone,
+                verified: true
+            });
+        } else {
+            // Increment attempts
+            storedOTPData.attempts += 1;
+            otpStore.set(cleanPhone, storedOTPData);
+
+            res.status(400).json({
+                error: 'Invalid OTP',
+                attemptsRemaining: 3 - storedOTPData.attempts
+            });
+        }
+
+    } catch (error) {
+        console.error('Verify OTP Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get OTP status (for debugging/development)
+app.get('/api/otp-status/:phone', (req, res) => {
+    const { phone } = req.params;
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    const otpData = otpStore.get(cleanPhone);
+    
+    if (!otpData) {
+        return res.json({ exists: false });
+    }
+
+    res.json({
+        exists: true,
+        verified: otpData.verified,
+        attempts: otpData.attempts,
+        expiresAt: otpData.expiresAt,
+        expired: new Date() > otpData.expiresAt
+    });
 });
 
 // User Routes
