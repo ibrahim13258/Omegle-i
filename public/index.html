@@ -1,99 +1,1331 @@
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Omegle - Talk to strangers!</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
+    <title>Omegle Clone</title>
+    <style>
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Home Screen */
+        .home-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+            background: url('https://images.unsplash.com/photo-1519681393784-d120267933ba') no-repeat center center;
+            background-size: cover;
+            position: relative;
+        }
+
+        .home-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 0;
+        }
+
+        .home-content {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6;
+            }
+            to {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #0073e6, 0 0 40px #0073e6;
+            }
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        .description {
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #0073e6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #005bb5;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background-color: #333;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #444;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .interests {
+            margin-bottom: 30px;
+        }
+
+        .interests input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 1px solid #444;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .footer-links a {
+            color: #aaa;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a2e;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-title {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #0073e6;
+        }
+
+        .modal-text {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #121212;
+        }
+
+        .chat-header {
+            background-color: #1a1a2e;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .chat-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #0073e6;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .chat-exit {
+            color: #ff4444;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ff4444;
+        }
+
+        .status-indicator.connected {
+            background-color: #00c851;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 15px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: #0073e6;
+            border-bottom-right-radius: 5px;
+            color: white;
+        }
+
+        .message.stranger {
+            align-self: flex-start;
+            background-color: #333;
+            border-bottom-left-radius: 5px;
+            color: white;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            color: #aaa;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .chat-input-container {
+            padding: 15px;
+            background-color: #1a1a2e;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: none;
+            background-color: #333;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            background-color: #444;
+        }
+
+        .send-btn {
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .send-btn:hover {
+            background-color: #005bb5;
+        }
+
+        .attach-btn {
+            background-color: transparent;
+            color: #aaa;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .attach-menu {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            background-color: #333;
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .attach-menu.show {
+            display: flex;
+        }
+
+        .attach-option {
+            padding: 8px 15px;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .attach-option:hover {
+            background-color: #555;
+        }
+
+        .connect-btn {
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .connect-btn.disconnected {
+            background-color: #ff4444;
+        }
+
+        .connect-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: white;
+        }
+
+        /* Video Chat Interface */
+        .video-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #121212;
+        }
+
+        .video-header {
+            background-color: #1a1a2e;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .video-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #0073e6;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .video-exit {
+            color: #ff4444;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .video-feeds {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 50%;
+            background-color: #000;
+            position: relative;
+        }
+
+        .video-feed.local {
+            border-bottom: 1px solid #333;
+        }
+
+        .video-feed.remote {
+            flex-grow: 1;
+        }
+
+        .video-element {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        .control-btn.end-call {
+            background-color: #ff4444;
+        }
+
+        .video-chat {
+            height: 30%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .tagline {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .video-feeds {
+                flex-direction: column-reverse;
+            }
+            
+            .video-feed {
+                height: auto;
+                flex: 1;
+            }
+            
+            .video-feed.local {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                width: 120px;
+                height: 160px;
+                border: 2px solid #0073e6;
+                border-radius: 10px;
+                z-index: 10;
+            }
+            
+            .video-controls {
+                bottom: 10px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Long press menu */
+        .message-menu {
+            position: absolute;
+            background-color: #333;
+            border-radius: 5px;
+            padding: 5px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            display: none;
+        }
+
+        .message-menu.show {
+            display: block;
+        }
+
+        .menu-item {
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .menu-item:hover {
+            background-color: #444;
+        }
+
+        /* File preview */
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+
+        /* Permission prompt */
+        .permission-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .permission-prompt.show {
+            display: block;
+        }
+
+        .permission-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <span class="logo-icon">💬</span>
-                <span class="logo-text">omegle<span class="com">.com</span></span>
+    <!-- Home Screen -->
+    <div class="home-container" id="homeScreen">
+        <div class="home-content">
+            <div class="logo">Omegle Clone</div>
+            <div class="tagline">Talk to strangers!</div>
+            <div class="description">
+                By using this website, you accept the terms at the bottom. You must be 18+, or 13+ with parental permission.<br>
+                Video is monitored, so keep it clean!<br>
+                Go to an adult site instead if that's what you want
             </div>
-            <h1>Talk to strangers!</h1>
-            <p class="disclaimer">By using Omegle, you accept the terms at the bottom. You must be 18+, or 13+ with parental permission.</p>
-            <p class="feature-note">Mobile video chat is an experimental new feature<br>Video is monitored, so keep it clean!</p>
-            <p class="adult-link">Go to <a href="#" onclick="showAdultWarning()">an adult site</a> instead if that's what you want</p>
-        </header>
-
-        <main>
-            <div class="button-container">
-                <button class="chat-btn" onclick="startTextChat()">Start a chat</button>
-                <button class="video-btn" onclick="startVideoChat()">Video</button>
+            <div class="buttons">
+                <button class="btn btn-primary" id="startChatBtn">Start a chat</button>
+                <button class="btn btn-secondary" id="startVideoBtn">Video</button>
             </div>
-
-            <div class="interests-section">
-                <p>Meet strangers with your interests!</p>
-                <input type="text" placeholder="Add your interests (optional)" class="interests-input">
-                <div class="dropdown">
-                    <button class="dropdown-btn">▶ College student chat</button>
-                    <div class="dropdown-content">
-                        <p>Omegle (oh·meg·ull) is a great way to meet new friends, even while practicing social distancing.</p>
-                    </div>
+            <div class="interests">
+                <input type="text" id="interestsInput" placeholder="Add your interests (optional)">
+            </div>
+            <div class="footer">
+                <p>Omegle Clone is a great way to meet new friends, even while practicing social distancing</p>
+                <div class="footer-links">
+                    <a href="#" id="termsLink">Terms & Conditions</a>
+                    <a href="#" id="privacyLink">Privacy Policy</a>
+                    <a href="#" id="dmcaLink">DMCA Disclaimer</a>
                 </div>
             </div>
-        </main>
-
-        <footer>
-            <p>© 2025 Omegle Random Chat. All rights reserved. | 
-                <a href="#" onclick="showTerms()">Terms & Conditions</a> | 
-                <a href="#" onclick="showPrivacy()">Privacy Policy</a> | 
-                <a href="#" onclick="showDMCA()">DMCA Disclaimer</a>
-            </p>
-        </footer>
+        </div>
     </div>
 
-    <!-- Terms and Conditions Modal -->
-    <div id="termsModal" class="modal">
+    <!-- Terms Modal -->
+    <div class="modal" id="termsModal">
         <div class="modal-content">
-            <h3>Terms and Conditions</h3>
-            <p>By using this website, you agree that any actions you take during your use — including text, audio, photo, video communication — are solely your responsibility. Any illegal, abusive, or inappropriate activity is strictly prohibited. The creator or owner of this website will not be held liable for user actions. In case of any violation of laws, the individual user will be solely responsible and may be reported to authorities if required.</p>
+            <span class="modal-close" id="closeTermsModal">&times;</span>
+            <h3 class="modal-title">Terms and Conditions</h3>
+            <p class="modal-text">
+                By using this website, you agree that any actions you take during your use — including text, audio, photo, video communication — are solely your responsibility. Any illegal, abusive, or inappropriate activity is strictly prohibited. The creator or owner of this website will not be held liable for user actions. In case of any violation of laws, the individual user will be solely responsible and may be reported to authorities if required.
+            </p>
             <div class="modal-buttons">
-                <button class="agree-btn" onclick="agreeTerms()">Agree</button>
-                <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="agreeBtn">Agree</button>
             </div>
         </div>
     </div>
 
     <!-- Chat Interface -->
-    <div id="chatInterface" class="chat-interface hidden">
+    <div class="chat-container" id="chatContainer">
         <div class="chat-header">
-            <h3>Chat with Stranger</h3>
-            <div class="status" id="connectionStatus">Connecting...</div>
+            <div class="chat-exit" id="chatExitBtn">&times;</div>
+            <div class="chat-title">Omegle Clone</div>
+            <div class="chat-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
         </div>
-        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will appear here -->
+        </div>
         <div class="chat-input-container">
-            <button class="attachment-btn" onclick="selectFile()">+</button>
-            <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
-            <button class="send-btn" onclick="sendMessage()">Send</button>
-            <button class="connect-btn" id="connectBtn" onclick="toggleConnection()">Connect</button>
+            <button class="attach-btn" id="attachBtn">+
+                <div class="attach-menu" id="attachMenu">
+                    <div class="attach-option" id="sendLocation">Send Location</div>
+                    <div class="attach-option" id="sendPhoto">Send Photo</div>
+                    <div class="attach-option" id="sendVideo">Send Video</div>
+                </div>
+            </button>
+            <input type="text" class="chat-input" id="messageInput" placeholder="Type your message...">
+            <button class="send-btn" id="sendBtn">&#10148;</button>
+            <button class="connect-btn" id="connectBtn">
+                <div class="connect-icon"></div>
+                <span>Connect</span>
+            </button>
         </div>
-        <input type="file" id="fileInput" accept="image/*,video/*" style="display:none" onchange="handleFileSelect(event)">
     </div>
 
     <!-- Video Chat Interface -->
-    <div id="videoInterface" class="video-interface hidden">
+    <div class="video-container" id="videoContainer">
         <div class="video-header">
-            <h3>Omegle Stranger</h3>
-            <div class="status" id="videoConnectionStatus">Connecting...</div>
+            <div class="video-exit" id="videoExitBtn">&times;</div>
+            <div class="video-title">Omegle Video Clone</div>
         </div>
-        <div class="video-container">
-            <video id="localVideo" autoplay muted></video>
-            <video id="remoteVideo" autoplay></video>
+        <div class="video-feeds">
+            <div class="video-feed remote">
+                <video class="video-element" id="remoteVideo" autoplay playsinline></video>
+                <div class="permission-prompt" id="videoPermissionPrompt">
+                    <p>Please allow camera and microphone access to start video chat</p>
+                    <button class="permission-btn" id="requestPermissionBtn">Allow Access</button>
+                </div>
+            </div>
+            <div class="video-feed local">
+                <video class="video-element" id="localVideo" autoplay playsinline muted></video>
+            </div>
+            <div class="video-controls">
+                <button class="control-btn" id="muteBtn">🔇</button>
+                <button class="control-btn" id="cameraBtn">📷</button>
+                <button class="control-btn end-call" id="endCallBtn">✕</button>
+            </div>
         </div>
-        <div class="video-chat-messages" id="videoChatMessages"></div>
-        <div class="video-input-container">
-            <button class="attachment-btn" onclick="selectVideoFile()">+</button>
-            <input type="text" id="videoMessageInput" placeholder="Type a message..." onkeypress="handleVideoKeyPress(event)">
-            <button class="send-btn" onclick="sendVideoMessage()">Send</button>
-            <button class="connect-btn" id="videoConnectBtn" onclick="toggleVideoConnection()">Connect</button>
+        <div class="video-chat">
+            <div class="chat-messages" id="videoChatMessages">
+                <!-- Video chat messages will appear here -->
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="videoMessageInput" placeholder="Type your message...">
+                <button class="send-btn" id="videoSendBtn">&#10148;</button>
+            </div>
         </div>
-        <input type="file" id="videoFileInput" accept="image/*,video/*" style="display:none" onchange="handleVideoFileSelect(event)">
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <!-- Message Context Menu -->
+    <div class="message-menu" id="messageMenu">
+        <div class="menu-item" id="deleteMessage">Delete</div>
+        <div class="menu-item" id="replyMessage">Reply</div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const homeScreen = document.getElementById('homeScreen');
+        const chatContainer = document.getElementById('chatContainer');
+        const videoContainer = document.getElementById('videoContainer');
+        const startChatBtn = document.getElementById('startChatBtn');
+        const startVideoBtn = document.getElementById('startVideoBtn');
+        const termsModal = document.getElementById('termsModal');
+        const closeTermsModal = document.getElementById('closeTermsModal');
+        const agreeBtn = document.getElementById('agreeBtn');
+        const chatExitBtn = document.getElementById('chatExitBtn');
+        const videoExitBtn = document.getElementById('videoExitBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const videoChatMessages = document.getElementById('videoChatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const videoMessageInput = document.getElementById('videoMessageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const videoSendBtn = document.getElementById('videoSendBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const connectBtn = document.getElementById('connectBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const attachMenu = document.getElementById('attachMenu');
+        const sendLocation = document.getElementById('sendLocation');
+        const sendPhoto = document.getElementById('sendPhoto');
+        const sendVideo = document.getElementById('sendVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const localVideo = document.getElementById('localVideo');
+        const muteBtn = document.getElementById('muteBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const endCallBtn = document.getElementById('endCallBtn');
+        const requestPermissionBtn = document.getElementById('requestPermissionBtn');
+        const videoPermissionPrompt = document.getElementById('videoPermissionPrompt');
+        const messageMenu = document.getElementById('messageMenu');
+        const deleteMessage = document.getElementById('deleteMessage');
+        const replyMessage = document.getElementById('replyMessage');
+        const termsLink = document.getElementById('termsLink');
+        const privacyLink = document.getElementById('privacyLink');
+        const dmcaLink = document.getElementById('dmcaLink');
+
+        // State variables
+        let isConnected = false;
+        let isTyping = false;
+        let typingTimeout;
+        let currentChatType = null; // 'text' or 'video'
+        let selectedMessage = null;
+        let localStream = null;
+        let peerConnection = null;
+        let dataChannel = null;
+
+        // Mock WebSocket connection (in a real app, this would connect to your backend)
+        let socket = {
+            connect: function() {
+                console.log("Connecting to server...");
+                setTimeout(() => {
+                    isConnected = true;
+                    updateConnectionStatus();
+                    addSystemMessage("Connected to a stranger");
+                    
+                    // Simulate stranger typing
+                    setTimeout(() => {
+                        addTypingIndicator();
+                        setTimeout(() => {
+                            removeTypingIndicator();
+                            addStrangerMessage("Hi there! How are you?");
+                        }, 2000);
+                    }, 1000);
+                }, 1500);
+            },
+            disconnect: function() {
+                console.log("Disconnecting from server...");
+                isConnected = false;
+                updateConnectionStatus();
+                addSystemMessage("Disconnected from stranger");
+            },
+            sendMessage: function(message) {
+                console.log("Sending message:", message);
+                // In a real app, this would send the message to the server
+                // Simulate response after a delay
+                if (Math.random() > 0.3) { // 70% chance of response
+                    setTimeout(() => {
+                        addTypingIndicator();
+                        setTimeout(() => {
+                            removeTypingIndicator();
+                            addStrangerMessage(getRandomResponse());
+                        }, 1000 + Math.random() * 2000);
+                    }, 500 + Math.random() * 1500);
+                }
+            },
+            sendTyping: function(isTyping) {
+                console.log(isTyping ? "User is typing..." : "User stopped typing");
+                // In a real app, this would notify the other user
+            }
+        };
+
+        // Initialize the app
+        function init() {
+            setupEventListeners();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Home screen buttons
+            startChatBtn.addEventListener('click', () => {
+                currentChatType = 'text';
+                showTermsModal();
+            });
+            
+            startVideoBtn.addEventListener('click', () => {
+                currentChatType = 'video';
+                showTermsModal();
+            });
+            
+            // Terms modal
+            closeTermsModal.addEventListener('click', hideTermsModal);
+            agreeBtn.addEventListener('click', () => {
+                hideTermsModal();
+                if (currentChatType === 'text') {
+                    startTextChat();
+                } else {
+                    startVideoChat();
+                }
+            });
+            
+            // Chat interface
+            chatExitBtn.addEventListener('click', () => {
+                socket.disconnect();
+                showHomeScreen();
+            });
+            
+            videoExitBtn.addEventListener('click', () => {
+                endVideoCall();
+                showHomeScreen();
+            });
+            
+            // Message input
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && messageInput.value.trim()) {
+                    sendMessage();
+                }
+                
+                if (!isTyping && messageInput.value) {
+                    isTyping = true;
+                    socket.sendTyping(true);
+                }
+            });
+            
+            messageInput.addEventListener('input', () => {
+                if (typingTimeout) clearTimeout(typingTimeout);
+                
+                if (messageInput.value) {
+                    if (!isTyping) {
+                        isTyping = true;
+                        socket.sendTyping(true);
+                    }
+                    typingTimeout = setTimeout(() => {
+                        isTyping = false;
+                        socket.sendTyping(false);
+                    }, 1000);
+                } else {
+                    isTyping = false;
+                    socket.sendTyping(false);
+                }
+            });
+            
+            videoMessageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && videoMessageInput.value.trim()) {
+                    sendVideoMessage();
+                }
+            });
+            
+            // Send buttons
+            sendBtn.addEventListener('click', sendMessage);
+            videoSendBtn.addEventListener('click', sendVideoMessage);
+            
+            // Connect button
+            connectBtn.addEventListener('click', toggleConnection);
+            
+            // Attachments
+            attachBtn.addEventListener('click', toggleAttachMenu);
+            sendLocation.addEventListener('click', () => {
+                sendLocationMessage();
+                hideAttachMenu();
+            });
+            sendPhoto.addEventListener('click', () => {
+                // In a real app, this would open a file picker
+                alert("Photo attachment would be implemented here");
+                hideAttachMenu();
+            });
+            sendVideo.addEventListener('click', () => {
+                // In a real app, this would open a file picker
+                alert("Video attachment would be implemented here");
+                hideAttachMenu();
+            });
+            
+            // Video controls
+            muteBtn.addEventListener('click', toggleMute);
+            cameraBtn.addEventListener('click', toggleCamera);
+            endCallBtn.addEventListener('click', endVideoCall);
+            requestPermissionBtn.addEventListener('click', requestPermissions);
+            
+            // Message context menu
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.message') && !e.target.closest('.message-menu')) {
+                    hideMessageMenu();
+                }
+            });
+            
+            // Footer links
+            termsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert("By using this website, you agree to comply with all applicable laws and not to use the service for any illegal activities. Users must be at least 18 years old or have parental permission to access the website. We reserve the right to terminate or restrict your access at any time for violating our policies or engaging in inappropriate behavior. You are solely responsible for your interactions and activities on this platform.");
+            });
+            
+            privacyLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert("We value your privacy. This website may collect minimal data such as IP address, browser type, and usage activity for analytical and security purposes. We do not sell or share your personal information with third parties, except as required by law. By using this site, you consent to the collection and use of information in accordance with this policy.");
+            });
+            
+            dmcaLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert("We respect copyright laws and comply with the Digital Millennium Copyright Act (DMCA). If you believe that any content on this site infringes upon your copyright, please contact us with proper documentation, and we will take appropriate action.");
+            });
+            
+            // Long press for message menu
+            document.addEventListener('contextmenu', (e) => {
+                if (e.target.closest('.message')) {
+                    e.preventDefault();
+                    showMessageMenu(e.target.closest('.message'), e.clientX, e.clientY);
+                }
+            });
+            
+            deleteMessage.addEventListener('click', () => {
+                if (selectedMessage) {
+                    selectedMessage.remove();
+                    hideMessageMenu();
+                }
+            });
+            
+            replyMessage.addEventListener('click', () => {
+                if (selectedMessage) {
+                    const messageText = selectedMessage.textContent;
+                    if (currentChatType === 'text') {
+                        messageInput.value = `Replying to: ${messageText}`;
+                        messageInput.focus();
+                    } else {
+                        videoMessageInput.value = `Replying to: ${messageText}`;
+                        videoMessageInput.focus();
+                    }
+                    hideMessageMenu();
+                }
+            });
+        }
+
+        // Show terms modal
+        function showTermsModal() {
+            termsModal.style.display = 'flex';
+        }
+
+        // Hide terms modal
+        function hideTermsModal() {
+            termsModal.style.display = 'none';
+        }
+
+        // Show home screen
+        function showHomeScreen() {
+            homeScreen.style.display = 'flex';
+            chatContainer.style.display = 'none';
+            videoContainer.style.display = 'none';
+        }
+
+        // Start text chat
+        function startTextChat() {
+            homeScreen.style.display = 'none';
+            chatContainer.style.display = 'flex';
+            videoContainer.style.display = 'none';
+            
+            // Clear previous messages
+            chatMessages.innerHTML = '';
+            
+            // Connect to server
+            socket.connect();
+        }
+
+        // Start video chat
+        function startVideoChat() {
+            homeScreen.style.display = 'none';
+            chatContainer.style.display = 'none';
+            videoContainer.style.display = 'flex';
+            
+            // Clear previous messages
+            videoChatMessages.innerHTML = '';
+            
+            // Show permission prompt
+            videoPermissionPrompt.classList.add('show');
+            
+            // In a real app, this would initialize WebRTC
+        }
+
+        // Request camera/mic permissions
+        function requestPermissions() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    localStream = stream;
+                    localVideo.srcObject = stream;
+                    videoPermissionPrompt.classList.remove('show');
+                    addVideoSystemMessage("Video chat started");
+                    
+                    // In a real app, this would initiate WebRTC connection
+                    setTimeout(() => {
+                        // Simulate connecting to a stranger
+                        addVideoSystemMessage("Connected to a stranger");
+                        
+                        // Simulate remote video (in real app this would be from WebRTC)
+                        setTimeout(() => {
+                            // This is just a simulation - in a real app you'd have actual video streams
+                            addVideoSystemMessage("Stranger joined the video chat");
+                        }, 1000);
+                    }, 1500);
+                })
+                .catch(err => {
+                    console.error("Error accessing media devices:", err);
+                    alert("Could not access camera and microphone. Please check your permissions.");
+                });
+        }
+
+        // Toggle connection status
+        function toggleConnection() {
+            if (isConnected) {
+                socket.disconnect();
+                connectBtn.classList.add('disconnected');
+                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Disconnected</span>';
+            } else {
+                socket.connect();
+                connectBtn.classList.remove('disconnected');
+                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Connect</span>';
+            }
+        }
+
+        // Update connection status UI
+        function updateConnectionStatus() {
+            if (isConnected) {
+                statusIndicator.classList.add('connected');
+                statusText.textContent = 'Connected';
+            } else {
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        // Send text message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            addUserMessage(message);
+            socket.sendMessage(message);
+            messageInput.value = '';
+            
+            if (typingTimeout) clearTimeout(typingTimeout);
+            isTyping = false;
+            socket.sendTyping(false);
+        }
+
+        // Send video chat message
+        function sendVideoMessage() {
+            const message = videoMessageInput.value.trim();
+            if (!message) return;
+            
+            addVideoUserMessage(message);
+            
+            // In a real app, this would send via WebRTC data channel
+            setTimeout(() => {
+                addVideoStrangerMessage(getRandomResponse());
+            }, 1000 + Math.random() * 2000);
+            
+            videoMessageInput.value = '';
+        }
+
+        // Send location message
+        function sendLocationMessage() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const { latitude, longitude } = position.coords;
+                        const message = `My location: https://www.google.com/maps?q=${latitude},${longitude}`;
+                        
+                        if (currentChatType === 'text') {
+                            addUserMessage(message);
+                            socket.sendMessage(message);
+                        } else {
+                            addVideoUserMessage(message);
+                        }
+                    },
+                    error => {
+                        console.error("Error getting location:", error);
+                        alert("Could not get your location. Please check your permissions.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser");
+            }
+        }
+
+        // Add user message to chat
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Add stranger message to chat
+        function addStrangerMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message stranger';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Add system message to chat
+        function addSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Add typing indicator
+        function addTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.textContent = 'Stranger is typing...';
+            typingDiv.id = 'typingIndicator';
+            chatMessages.appendChild(typingDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) typingDiv.remove();
+        }
+
+        // Add video user message
+        function addVideoUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            videoChatMessages.appendChild(messageDiv);
+            scrollToBottom(videoChatMessages);
+        }
+
+        // Add video stranger message
+        function addVideoStrangerMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message stranger';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            videoChatMessages.appendChild(messageDiv);
+            scrollToBottom(videoChatMessages);
+        }
+
+        // Add video system message
+        function addVideoSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            videoChatMessages.appendChild(messageDiv);
+            scrollToBottom(videoChatMessages);
+        }
+
+        // Toggle attach menu
+        function toggleAttachMenu() {
+            attachMenu.classList.toggle('show');
+        }
+
+        // Hide attach menu
+        function hideAttachMenu() {
+            attachMenu.classList.remove('show');
+        }
+
+        // Toggle mute
+        function toggleMute() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                const isMuted = audioTracks[0].enabled;
+                audioTracks[0].enabled = !isMuted;
+                muteBtn.textContent = isMuted ? '🔈' : '🔇';
+            }
+        }
+
+        // Toggle camera
+        function toggleCamera() {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                const isOn = videoTracks[0].enabled;
+                videoTracks[0].enabled = !isOn;
+                cameraBtn.textContent = isOn ? '📷' : '❌';
+            }
+        }
+
+        // End video call
+        function endVideoCall() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+                localVideo.srcObject = null;
+            }
+            
+            // In a real app, this would close the WebRTC connection
+            addVideoSystemMessage("Video chat ended");
+            
+            setTimeout(() => {
+                showHomeScreen();
+            }, 1500);
+        }
+
+        // Show message context menu
+        function showMessageMenu(messageElement, x, y) {
+            selectedMessage = messageElement;
+            messageMenu.style.left = `${x}px`;
+            messageMenu.style.top = `${y}px`;
+            messageMenu.classList.add('show');
+        }
+
+        // Hide message context menu
+        function hideMessageMenu() {
+            messageMenu.classList.remove('show');
+        }
+
+        // Scroll to bottom of chat
+        function scrollToBottom(element) {
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // Get random response (for simulation)
+        function getRandomResponse() {
+            const responses = [
+                "Hi there!",
+                "How are you?",
+                "Nice to meet you!",
+                "What's up?",
+                "Where are you from?",
+                "I'm just browsing Omegle",
+                "Do you come here often?",
+                "LOL",
+                "That's interesting",
+                "Tell me more about yourself",
+                "I'm bored",
+                "Any plans for today?",
+                "What do you do for fun?",
+                "The weather is nice today",
+                "Have you seen any good movies lately?"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        // Initialize the app
+        init();
+    </script>
 </body>
 </html>
