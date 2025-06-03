@@ -7,145 +7,142 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Serve static files
+// Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve index.html
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Store connected users waiting for a match
+const waitingUsers = {
+    text: [],
+    video: []
+};
 
-// Store waiting users
-let waitingTextUsers = [];
-let waitingVideoUsers = [];
-let connectedPairs = new Map();
+// Store active conversations
+const conversations = {};
 
+// Socket.io connection handler
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-    
-    // Handle text chat joining
-    socket.on('join-text-chat', () => {
-        if (waitingTextUsers.length > 0) {
-            // Match with waiting user
-            const partner = waitingTextUsers.shift();
-            const roomId = `text-${socket.id}-${partner.id}`;
-            
-            socket.join(roomId);
-            partner.join(roomId);
-            
-            connectedPairs.set(socket.id, { partner: partner.id, room: roomId, type: 'text' });
-            connectedPairs.set(partner.id, { partner: socket.id, room: roomId, type: 'text' });
-            
-            socket.emit('matched');
-            partner.emit('matched');
-            
-            console.log(`Text chat matched: ${socket.id} with ${partner.id}`);
-        } else {
-            // Add to waiting list
-            waitingTextUsers.push(socket);
-            console.log(`User ${socket.id} waiting for text chat`);
-        }
-    });
-    
-    // Handle video chat joining
-    socket.on('join-video-chat', () => {
-        if (waitingVideoUsers.length > 0) {
-            // Match with waiting user
-            const partner = waitingVideoUsers.shift();
-            const roomId = `video-${socket.id}-${partner.id}`;
-            
-            socket.join(roomId);
-            partner.join(roomId);
-            
-            connectedPairs.set(socket.id, { partner: partner.id, room: roomId, type: 'video' });
-            connectedPairs.set(partner.id, { partner: socket.id, room: roomId, type: 'video' });
-            
-            socket.emit('matched');
-            partner.emit('matched');
-            
-            console.log(`Video chat matched: ${socket.id} with ${partner.id}`);
-        } else {
-            // Add to waiting list
-            waitingVideoUsers.push(socket);
-            console.log(`User ${socket.id} waiting for video chat`);
-        }
-    });
-    
-    // Handle messages
-    socket.on('message', (message) => {
-        const pair = connectedPairs.get(socket.id);
-        if (pair) {
-            socket.to(pair.room).emit('message', { message, sender: socket.id });
-        }
-    });
-    
-    // Handle typing indicator
-    socket.on('typing', () => {
-        const pair = connectedPairs.get(socket.id);
-        if (pair) {
-            socket.to(pair.room).emit('typing');
-        }
-    });
-    
-    // Handle file upload
-    socket.on('file-upload', (fileData) => {
-        const pair = connectedPairs.get(socket.id);
-        if (pair && fileData.data && fileData.data.length <= 70000000) { // ~50MB base64 limit
-            socket.to(pair.room).emit('file-received', fileData);
-            console.log(`File sent: ${fileData.name} from ${socket.id}`);
-        }
-    });
-    
-    // WebRTC signaling
-    socket.on('video-offer', (offer) => {
-        const pair = connectedPairs.get(socket.id);
-        if (pair && pair.type === 'video') {
-            socket.to(pair.room).emit('video-offer', offer);
-        }
-    });
-    
-    socket.on('video-answer', (answer) => {
-        const pair = connectedPairs.get(socket.id);
-        if (pair && pair.type === 'video') {
-            socket.to(pair.room).emit('video-answer', answer);
-        }
-    });
-    
-    socket.on('ice-candidate', (candidate) => {
-        const pair = connectedPairs.get(socket.id);
-        if (pair && pair.type === 'video') {
-            socket.to(pair.room).emit('ice-candidate', candidate);
-        }
-    });
-    
-    // Handle manual disconnect
-    socket.on('disconnect-chat', () => {
-        handleDisconnection(socket);
-    });
-    
-    // Handle socket disconnection
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        handleDisconnection(socket);
-    });
-    
-    function handleDisconnection(socket) {
-        // Remove from waiting lists
-        waitingTextUsers = waitingTextUsers.filter(user => user.id !== socket.id);
-        waitingVideoUsers = waitingVideoUsers.filter(user => user.id !== socket.id);
+    console.log(`New user connected: ${socket.id}`);
+
+    // Handle joining a chat
+    socket.on('joinChat', ({ chatType, interests }) => {
+        console.log(`${socket.id} wants to join ${chatType} chat`);
         
-        // Handle paired disconnection
-        const pair = connectedPairs.get(socket.id);
-        if (pair) {
-            socket.to(pair.room).emit('user-disconnected');
-            connectedPairs.delete(socket.id);
-            connectedPairs.delete(pair.partner);
-            console.log(`Pair disconnected: ${socket.id} and ${pair.partner}`);
+        // Add user to waiting list
+        waitingUsers[chatType].push({
+            socketId: socket.id,
+            interests: interests || []
+        });
+
+        // Try to match users
+        matchUsers(chatType);
+    });
+
+    // Handle sending a message
+    socket.on('sendMessage', ({ conversationId, message }) => {
+        const conversation = conversations[conversationId];
+        if (conversation) {
+            const otherUser = conversation.user1 === socket.id ? conversation.user2 : conversation.user1;
+            io.to(otherUser).emit('receiveMessage', message);
         }
-    }
+    });
+
+    // Handle typing indicator
+    socket.on('typing', ({ conversationId, isTyping }) => {
+        const conversation = conversations[conversationId];
+        if (conversation) {
+            const otherUser = conversation.user1 === socket.id ? conversation.user2 : conversation.user1;
+            io.to(otherUser).emit('typing', isTyping);
+        }
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.id}`);
+        
+        // Remove from waiting lists
+        Object.keys(waitingUsers).forEach(chatType => {
+            waitingUsers[chatType] = waitingUsers[chatType].filter(user => user.socketId !== socket.id);
+        });
+
+        // Handle if user was in a conversation
+        let conversationToEnd = null;
+        Object.keys(conversations).forEach(conversationId => {
+            const conversation = conversations[conversationId];
+            if (conversation.user1 === socket.id || conversation.user2 === socket.id) {
+                conversationToEnd = conversation;
+            }
+        });
+
+        if (conversationToEnd) {
+            const otherUser = conversationToEnd.user1 === socket.id ? 
+                conversationToEnd.user2 : conversationToEnd.user1;
+            
+            io.to(otherUser).emit('strangerDisconnected');
+            delete conversations[conversationToEnd.id];
+        }
+    });
+
+    // WebRTC signaling handlers
+    socket.on('offer', (data) => {
+        io.to(data.to).emit('offer', {
+            offer: data.offer,
+            from: socket.id
+        });
+    });
+
+    socket.on('answer', (data) => {
+        io.to(data.to).emit('answer', {
+            answer: data.answer,
+            from: socket.id
+        });
+    });
+
+    socket.on('candidate', (data) => {
+        io.to(data.to).emit('candidate', {
+            candidate: data.candidate,
+            from: socket.id
+        });
+    });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
+// Match users function
+function matchUsers(chatType) {
+    if (waitingUsers[chatType].length >= 2) {
+        // Simple matching - just take the first two users
+        const user1 = waitingUsers[chatType].shift();
+        const user2 = waitingUsers[chatType].shift();
+
+        const conversationId = generateId();
+        conversations[conversationId] = {
+            id: conversationId,
+            user1: user1.socketId,
+            user2: user2.socketId,
+            type: chatType,
+            interests: [...user1.interests, ...user2.interests]
+        };
+
+        // Notify both users
+        io.to(user1.socketId).emit('matched', { 
+            conversationId,
+            strangerId: user2.socketId
+        });
+
+        io.to(user2.socketId).emit('matched', { 
+            conversationId,
+            strangerId: user1.socketId
+        });
+
+        console.log(`Matched ${user1.socketId} with ${user2.socketId} for ${chatType} chat`);
+    }
+}
+
+// Generate random ID
+function generateId() {
+    return Math.random().toString(36).substr(2, 9);
+}
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-});
+}); 
