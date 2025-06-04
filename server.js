@@ -10,139 +10,136 @@ const io = socketIo(server);
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store connected users waiting for a match
-const waitingUsers = {
-    text: [],
-    video: []
-};
-
-// Store active conversations
-const conversations = {};
+// Store users waiting for connections
+const textQueue = [];
+const videoQueue = [];
+const users = {};
 
 // Socket.io connection handler
 io.on('connection', (socket) => {
-    console.log(`New user connected: ${socket.id}`);
-
-    // Handle joining a chat
-    socket.on('joinChat', ({ chatType, interests }) => {
-        console.log(`${socket.id} wants to join ${chatType} chat`);
+    console.log(`New connection: ${socket.id}`);
+    
+    // Add user to the users object
+    users[socket.id] = { socket, interests: '', type: '' };
+    
+    // Handle finding a stranger
+    socket.on('findStranger', (data) => {
+        users[socket.id].interests = data.interests;
+        users[socket.id].type = data.type;
+        users[socket.id].userId = data.userId;
         
-        // Add user to waiting list
-        waitingUsers[chatType].push({
-            socketId: socket.id,
-            interests: interests || []
+        const queue = data.type === 'text' ? textQueue : videoQueue;
+        
+        // Check if there's someone waiting with similar interests
+        const matchIndex = queue.findIndex(id => {
+            const user = users[id];
+            return (
+                user.type === data.type && 
+                (user.interests === data.interests || !data.interests || !user.interests)
+            );
         });
-
-        // Try to match users
-        matchUsers(chatType);
-    });
-
-    // Handle sending a message
-    socket.on('sendMessage', ({ conversationId, message }) => {
-        const conversation = conversations[conversationId];
-        if (conversation) {
-            const otherUser = conversation.user1 === socket.id ? conversation.user2 : conversation.user1;
-            io.to(otherUser).emit('receiveMessage', message);
+        
+        if (matchIndex !== -1) {
+            // Found a match
+            const strangerId = queue[matchIndex];
+            queue.splice(matchIndex, 1);
+            
+            // Pair them up
+            users[socket.id].strangerId = strangerId;
+            users[strangerId].strangerId = socket.id;
+            
+            // Notify both users
+            socket.emit('strangerFound', { strangerId });
+            users[strangerId].socket.emit('strangerFound', { strangerId: socket.id });
+        } else {
+            // No match found, add to queue
+            queue.push(socket.id);
         }
     });
-
+    
+    // Handle messages between users
+    socket.on('message', (data) => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('message', { text: data.text });
+        }
+    });
+    
     // Handle typing indicator
-    socket.on('typing', ({ conversationId, isTyping }) => {
-        const conversation = conversations[conversationId];
-        if (conversation) {
-            const otherUser = conversation.user1 === socket.id ? conversation.user2 : conversation.user1;
-            io.to(otherUser).emit('typing', isTyping);
+    socket.on('typing', (data) => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('typing', data.isTyping);
         }
     });
-
+    
+    // Handle WebRTC offers
+    socket.on('offer', (data) => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('offer', { offer: data.offer, from: socket.id });
+        }
+    });
+    
+    // Handle WebRTC answers
+    socket.on('answer', (data) => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('answer', { answer: data.answer, from: socket.id });
+        }
+    });
+    
+    // Handle ICE candidates
+    socket.on('iceCandidate', (data) => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('iceCandidate', { candidate: data.candidate, from: socket.id });
+        }
+    });
+    
+    // Handle file sharing
+    socket.on('file', (data) => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('file', { file: data.file });
+        }
+    });
+    
+    // Handle disconnection from stranger
+    socket.on('disconnectFromStranger', () => {
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('strangerDisconnected');
+            users[strangerId].strangerId = null;
+            users[socket.id].strangerId = null;
+        }
+    });
+    
     // Handle disconnection
     socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.id}`);
+        console.log(`Disconnected: ${socket.id}`);
         
-        // Remove from waiting lists
-        Object.keys(waitingUsers).forEach(chatType => {
-            waitingUsers[chatType] = waitingUsers[chatType].filter(user => user.socketId !== socket.id);
-        });
-
-        // Handle if user was in a conversation
-        let conversationToEnd = null;
-        Object.keys(conversations).forEach(conversationId => {
-            const conversation = conversations[conversationId];
-            if (conversation.user1 === socket.id || conversation.user2 === socket.id) {
-                conversationToEnd = conversation;
-            }
-        });
-
-        if (conversationToEnd) {
-            const otherUser = conversationToEnd.user1 === socket.id ? 
-                conversationToEnd.user2 : conversationToEnd.user1;
-            
-            io.to(otherUser).emit('strangerDisconnected');
-            delete conversations[conversationToEnd.id];
+        // Notify stranger if connected
+        const strangerId = users[socket.id]?.strangerId;
+        if (strangerId && users[strangerId]) {
+            users[strangerId].socket.emit('strangerDisconnected');
+            users[strangerId].strangerId = null;
         }
-    });
-
-    // WebRTC signaling handlers
-    socket.on('offer', (data) => {
-        io.to(data.to).emit('offer', {
-            offer: data.offer,
-            from: socket.id
-        });
-    });
-
-    socket.on('answer', (data) => {
-        io.to(data.to).emit('answer', {
-            answer: data.answer,
-            from: socket.id
-        });
-    });
-
-    socket.on('candidate', (data) => {
-        io.to(data.to).emit('candidate', {
-            candidate: data.candidate,
-            from: socket.id
-        });
+        
+        // Remove from queues
+        const textIndex = textQueue.indexOf(socket.id);
+        if (textIndex !== -1) textQueue.splice(textIndex, 1);
+        
+        const videoIndex = videoQueue.indexOf(socket.id);
+        if (videoIndex !== -1) videoQueue.splice(videoIndex, 1);
+        
+        // Remove from users
+        delete users[socket.id];
     });
 });
-
-// Match users function
-function matchUsers(chatType) {
-    if (waitingUsers[chatType].length >= 2) {
-        // Simple matching - just take the first two users
-        const user1 = waitingUsers[chatType].shift();
-        const user2 = waitingUsers[chatType].shift();
-
-        const conversationId = generateId();
-        conversations[conversationId] = {
-            id: conversationId,
-            user1: user1.socketId,
-            user2: user2.socketId,
-            type: chatType,
-            interests: [...user1.interests, ...user2.interests]
-        };
-
-        // Notify both users
-        io.to(user1.socketId).emit('matched', { 
-            conversationId,
-            strangerId: user2.socketId
-        });
-
-        io.to(user2.socketId).emit('matched', { 
-            conversationId,
-            strangerId: user1.socketId
-        });
-
-        console.log(`Matched ${user1.socketId} with ${user2.socketId} for ${chatType} chat`);
-    }
-}
-
-// Generate random ID
-function generateId() {
-    return Math.random().toString(36).substr(2, 9);
-}
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-}); 
+});
