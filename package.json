@@ -1,7 +1,7 @@
-{
+ {
   "name": "omegle-clone",
   "version": "1.0.0",
-  "description": "A cinematic-style Omegle clone with text and video chat functionality",
+  "description": "A real-time chat application with text and video capabilities",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,17 +10,16 @@
   },
   "keywords": [
     "chat",
-    "omegle",
     "video",
-    "socket.io",
-    "webrtc"
+    "webrtc",
+    "websocket",
+    "realtime"
   ],
   "author": "Your Name",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "wrtc": "^0.4.7"
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
