@@ -1,523 +1,1760 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instronova - Social Media Platform</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Omegle Clone</title>
+    <style>
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Home Screen */
+        .home-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+            background: url('https://images.unsplash.com/photo-1519681393784-d120267933ba') no-repeat center center;
+            background-size: cover;
+            position: relative;
+        }
+
+        .home-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 0;
+        }
+
+        .home-content {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6;
+            }
+            to {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #0073e6, 0 0 40px #0073e6;
+            }
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        .description {
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #0073e6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #005bb5;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background-color: #333;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #444;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .interests {
+            margin-bottom: 30px;
+        }
+
+        .interests input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 1px solid #444;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .footer-links a {
+            color: #aaa;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a2e;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-title {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #0073e6;
+        }
+
+        .modal-text {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #121212;
+        }
+
+        .chat-header {
+            background-color: #1a1a2e;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .chat-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #0073e6;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .chat-exit {
+            color: #ff4444;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ff4444;
+        }
+
+        .status-indicator.connected {
+            background-color: #00c851;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 15px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: #0073e6;
+            border-bottom-right-radius: 5px;
+            color: white;
+        }
+
+        .message.stranger {
+            align-self: flex-start;
+            background-color: #333;
+            border-bottom-left-radius: 5px;
+            color: white;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            color: #aaa;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .chat-input-container {
+            padding: 15px;
+            background-color: #1a1a2e;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: none;
+            background-color: #333;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            background-color: #444;
+        }
+
+        .send-btn {
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .send-btn:hover {
+            background-color: #005bb5;
+        }
+
+        .attach-btn {
+            background-color: transparent;
+            color: #aaa;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .attach-menu {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            background-color: #333;
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .attach-menu.show {
+            display: flex;
+        }
+
+        .attach-option {
+            padding: 8px 15px;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .attach-option:hover {
+            background-color: #555;
+        }
+
+        .connect-btn {
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .connect-btn.disconnected {
+            background-color: #ff4444;
+        }
+
+        .connect-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: white;
+        }
+
+        /* Video Chat Interface */
+        .video-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #121212;
+        }
+
+        .video-header {
+            background-color: #1a1a2e;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .video-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #0073e6;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .video-exit {
+            color: #ff4444;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .video-feeds {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 50%;
+            background-color: #000;
+            position: relative;
+        }
+
+        .video-feed.local {
+            border-bottom: 1px solid #333;
+        }
+
+        .video-feed.remote {
+            flex-grow: 1;
+        }
+
+        .video-element {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        .control-btn.end-call {
+            background-color: #ff4444;
+        }
+
+        .video-chat {
+            height: 30%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .tagline {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .video-feeds {
+                flex-direction: column-reverse;
+            }
+            
+            .video-feed {
+                height: auto;
+                flex: 1;
+            }
+            
+            .video-feed.local {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                width: 120px;
+                height: 160px;
+                border: 2px solid #0073e6;
+                border-radius: 10px;
+                z-index: 10;
+            }
+            
+            .video-controls {
+                bottom: 10px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Long press menu */
+        .message-menu {
+            position: absolute;
+            background-color: #333;
+            border-radius: 5px;
+            padding: 5px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            display: none;
+        }
+
+        .message-menu.show {
+            display: block;
+        }
+
+        .menu-item {
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .menu-item:hover {
+            background-color: #444;
+        }
+
+        /* File preview */
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+
+        /* Permission prompt */
+        .permission-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .permission-prompt.show {
+            display: block;
+        }
+
+        .permission-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* File input hidden */
+        .hidden-file-input {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
-        <div class="loading-logo">
-            <h1>Instronova</h1>
-            <div class="loading-spinner"></div>
-        </div>
-    </div>
-
-    <!-- Login Page -->
-    <div id="loginPage" class="page active">
-        <div class="login-container">
-            <div class="login-card">
-                <div class="logo">
-                    <h1>Instronova</h1>
-                </div>
-                <form id="loginForm" class="login-form">
-                    <div class="input-group">
-                        <input type="text" id="loginEmail" placeholder="Email or Username" required>
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="password" id="loginPassword" placeholder="Password" required>
-                        <i class="fas fa-lock"></i>
-                        <i class="fas fa-eye toggle-password" onclick="togglePassword('loginPassword')"></i>
-                    </div>
-                    <button type="submit" class="login-btn">
-                        <span>Login</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </form>
-                <div class="login-links">
-                    <a href="#" onclick="openForgotPasswordModal()">Forgot Password?</a>
-                    <p>Don't have an account? <a href="#" onclick="showPage('signupPage')">Sign up</a></p>
+    <!-- Home Screen -->
+    <div class="home-container" id="homeScreen">
+        <div class="home-content">
+            <div class="logo">Omegle Clone</div>
+            <div class="tagline">Talk to strangers!</div>
+            <div class="description">
+                By using this website, you accept the terms at the bottom. You must be 18+, or 13+ with parental permission.<br>
+                Video is monitored, so keep it clean!<br>
+                Go to an adult site instead if that's what you want
+            </div>
+            <div class="buttons">
+                <button class="btn btn-primary" id="startChatBtn">Start a chat</button>
+                <button class="btn btn-secondary" id="startVideoBtn">Video</button>
+            </div>
+            <div class="interests">
+                <input type="text" id="interestsInput" placeholder="Add your interests (optional)">
+            </div>
+            <div class="footer">
+                <p>Omegle Clone is a great way to meet new friends, even while practicing social distancing</p>
+                <div class="footer-links">
+                    <a href="#" id="termsLink">Terms & Conditions</a>
+                    <a href="#" id="privacyLink">Privacy Policy</a>
+                    <a href="#" id="dmcaLink">DMCA Disclaimer</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Signup Page -->
-    <div id="signupPage" class="page">
-        <div class="signup-container">
-            <div class="signup-card">
-                <div class="logo">
-                    <h1>Instronova</h1>
-                    <p>Join our community</p>
-                </div>
-                <form id="signupForm" class="signup-form">
-                    <div class="input-group">
-                        <input type="text" id="signupName" placeholder="Full Name" required>
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="signupUsername" placeholder="Username" required>
-                        <i class="fas fa-at"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="email" id="signupEmail" placeholder="Email" required>
-                        <i class="fas fa-envelope"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="tel" id="signupPhone" placeholder="Phone Number" required>
-                        <i class="fas fa-phone"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="password" id="signupPassword" placeholder="Password" required>
-                        <i class="fas fa-lock"></i>
-                        <i class="fas fa-eye toggle-password" onclick="togglePassword('signupPassword')"></i>
-                    </div>
-                    <button type="submit" class="signup-btn">
-                        <span>Next</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </form>
-                <div class="signup-links">
-                    <p>Already have an account? <a href="#" onclick="showPage('loginPage')">Log in</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Setup Page -->
-    <div id="profileSetupPage" class="page">
-        <div class="profile-setup-container">
-            <div class="profile-setup-card">
-                <div class="step-tracker">
-                    <span>Step 2 of 2 — Complete your Profile</span>
-                </div>
-                <div class="profile-picture-section">
-                    <div class="profile-picture-container">
-                        <img id="profilePreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23ddd'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23999' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
-                        <button class="upload-btn" onclick="document.getElementById('profilePictureInput').click()">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                    </div>
-                    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="previewProfilePicture(this)">
-                </div>
-                <form id="profileSetupForm" class="profile-setup-form">
-                    <div class="input-group">
-                        <input type="text" id="profileName" placeholder="Full Name" readonly>
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="profileUsername" placeholder="Username" readonly>
-                        <i class="fas fa-at"></i>
-                    </div>
-                    <div class="input-group">
-                        <textarea id="profileBio" placeholder="Bio (max 150 characters)" maxlength="150"></textarea>
-                        <span class="char-count">0/150</span>
-                    </div>
-                    <div class="input-group">
-                        <select id="profileGender">
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <i class="fas fa-venus-mars"></i>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="skip-btn" onclick="showPage('homePage')">Skip for now</button>
-                        <button type="submit" class="complete-btn">
-                            <span>Complete Profile</span>
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Home Page -->
-    <div id="homePage" class="page">
-        <header class="main-header">
-            <div class="logo">
-                <h1>Instronova</h1>
-            </div>
-            <div class="header-icons">
-                <i class="fas fa-bell notification-icon" onclick="openNotifications()"></i>
-                <i class="fas fa-paper-plane message-icon" onclick="showPage('messagesPage')"></i>
-            </div>
-        </header>
-
-        <div class="stories-section">
-            <div class="stories-container">
-                <div class="story add-story" onclick="openCreateStory()">
-                    <div class="story-avatar">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <span>Your Story</span>
-                </div>
-                <div class="story" onclick="openStoryViewer(1)">
-                    <div class="story-avatar">
-                        <img src="https://picsum.photos/60/60?random=1" alt="User 1">
-                    </div>
-                    <span>john_doe</span>
-                </div>
-                <div class="story" onclick="openStoryViewer(2)">
-                    <div class="story-avatar">
-                        <img src="https://picsum.photos/60/60?random=2" alt="User 2">
-                    </div>
-                    <span>jane_smith</span>
-                </div>
-                <div class="story" onclick="openStoryViewer(3)">
-                    <div class="story-avatar">
-                        <img src="https://picsum.photos/60/60?random=3" alt="User 3">
-                    </div>
-                    <span>mike_wilson</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="posts-section" id="postsContainer">
-            <!-- Posts will be dynamically loaded -->
-        </div>
-
-        <nav class="bottom-nav">
-            <div class="nav-item active" onclick="showPage('homePage')">
-                <i class="fas fa-home"></i>
-            </div>
-            <div class="nav-item" onclick="showPage('searchPage')">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="nav-item" onclick="openCreatePost()">
-                <i class="fas fa-plus"></i>
-            </div>
-            <div class="nav-item" onclick="showPage('reelsPage')">
-                <i class="fas fa-play"></i>
-            </div>
-            <div class="nav-item" onclick="showPage('profilePage')">
-                <i class="fas fa-user"></i>
-            </div>
-        </nav>
-    </div>
-
-    <!-- Search Page -->
-    <div id="searchPage" class="page">
-        <header class="search-header">
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search users, posts, tags..." onkeyup="performSearch()">
-                <i class="fas fa-search"></i>
-            </div>
-        </header>
-        <div class="search-filters">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="users">Users</button>
-            <button class="filter-btn" data-filter="posts">Posts</button>
-            <button class="filter-btn" data-filter="hashtags">Hashtags</button>
-        </div>
-        <div class="search-results" id="searchResults">
-            <div class="trending-section">
-                <h3>Trending Posts</h3>
-                <div class="trending-grid" id="trendingGrid">
-                    <!-- Trending posts will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Messages Page -->
-    <div id="messagesPage" class="page">
-        <header class="messages-header">
-            <div class="messages-title">
-                <h2>Messages</h2>
-            </div>
-            <i class="fas fa-edit new-message-icon" onclick="openNewMessage()"></i>
-        </header>
-        <div class="messages-search">
-            <input type="text" placeholder="Search username..." id="messageSearch">
-        </div>
-        <div class="chats-list" id="chatsList">
-            <!-- Chat list will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Reels Page -->
-    <div id="reelsPage" class="page">
-        <div class="reels-container" id="reelsContainer">
-            <!-- Reels will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Profile Page -->
-    <div id="profilePage" class="page">
-        <header class="profile-header">
-            <div class="profile-header-left">
-                <i class="fas fa-cog settings-icon" onclick="showPage('settingsPage')"></i>
-            </div>
-            <div class="profile-header-center">
-                <span id="profileHeaderUsername">username</span>
-            </div>
-            <div class="profile-header-right">
-                <i class="fas fa-share-alt share-profile-icon" onclick="shareProfile()"></i>
-            </div>
-        </header>
-        
-        <div class="profile-info">
-            <div class="profile-picture-large">
-                <img id="profilePictureLarge" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23ddd'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23999' font-size='20'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile Picture">
-            </div>
-            <div class="profile-stats">
-                <div class="stat">
-                    <span class="stat-number" id="postsCount">0</span>
-                    <span class="stat-label">Posts</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number" id="followersCount">0</span>
-                    <span class="stat-label">Followers</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number" id="followingCount">0</span>
-                    <span class="stat-label">Following</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="profile-bio">
-            <h3 id="profileDisplayName">Full Name</h3>
-            <p id="profileBioText">Bio will appear here...</p>
-        </div>
-        
-        <div class="profile-actions">
-            <button class="edit-profile-btn" onclick="editProfile()">Edit Profile</button>
-        </div>
-        
-        <div class="profile-tabs">
-            <div class="tab active" data-tab="posts">
-                <i class="fas fa-th"></i>
-            </div>
-            <div class="tab" data-tab="reels">
-                <i class="fas fa-play"></i>
-            </div>
-            <div class="tab" data-tab="tagged">
-                <i class="fas fa-user-tag"></i>
-            </div>
-        </div>
-        
-        <div class="profile-content" id="profileContent">
-            <!-- Profile content will be loaded here -->
-        </div>
-    </div>
-
-    <!-- Settings Page -->
-    <div id="settingsPage" class="page">
-        <header class="settings-header">
-            <i class="fas fa-arrow-left back-btn" onclick="showPage('profilePage')"></i>
-            <h2>Settings</h2>
-        </header>
-        <div class="settings-content">
-            <div class="settings-section">
-                <h3>Account</h3>
-                <div class="setting-item" onclick="editProfile()">
-                    <i class="fas fa-user"></i>
-                    <span>Edit Profile</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="setting-item" onclick="changePassword()">
-                    <i class="fas fa-lock"></i>
-                    <span>Change Password</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="setting-item">
-                    <i class="fas fa-user-lock"></i>
-                    <span>Private Account</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="privateAccountToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <h3>Privacy</h3>
-                <div class="setting-item">
-                    <i class="fas fa-eye"></i>
-                    <span>Show Activity Status</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="activityStatusToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <i class="fas fa-envelope"></i>
-                    <span>Allow Message Requests</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="messageRequestsToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <h3>Notifications</h3>
-                <div class="setting-item">
-                    <i class="fas fa-bell"></i>
-                    <span>Push Notifications</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="pushNotificationsToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <h3>General</h3>
-                <div class="setting-item">
-                    <i class="fas fa-moon"></i>
-                    <span>Dark Mode</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="darkModeToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="settings-section danger">
-                <h3>Account Actions</h3>
-                <div class="setting-item" onclick="deactivateAccount()">
-                    <i class="fas fa-user-slash"></i>
-                    <span>Deactivate Account</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-                <div class="setting-item" onclick="deleteAccount()">
-                    <i class="fas fa-trash"></i>
-                    <span>Delete Account</span>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <!-- Forgot Password Modal -->
-    <div id="forgotPasswordModal" class="modal">
+    <!-- Terms Modal -->
+    <div class="modal" id="termsModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>Reset Password</h3>
-                <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
-            </div>
-            <form id="forgotPasswordForm">
-                <div class="input-group">
-                    <input type="email" id="forgotEmail" placeholder="Enter your email" required>
-                </div>
-                <button type="submit" class="modal-btn">Send OTP</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- OTP Modal -->
-    <div id="otpModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Enter OTP</h3>
-                <span class="close" onclick="closeOtpModal()">&times;</span>
-            </div>
-            <p>OTP expires in <span id="otpTimer">30</span> seconds</p>
-            <form id="otpForm">
-                <div class="otp-inputs">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 0)">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 1)">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 2)">
-                    <input type="text" class="otp-input" maxlength="1" onkeyup="moveToNext(this, 3)">
-                </div>
-                <button type="submit" class="modal-btn">Verify OTP</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Create Post Modal -->
-    <div id="createPostModal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3>Create New Post</h3>
-                <span class="close" onclick="closeCreatePostModal()">&times;</span>
-            </div>
-            <div class="create-post-options">
-                <div class="post-option" onclick="selectPostType('post')">
-                    <i class="fas fa-image"></i>
-                    <span>Post</span>
-                    <p>Share photos and videos to your feed</p>
-                </div>
-                <div class="post-option" onclick="selectPostType('reel')">
-                    <i class="fas fa-video"></i>
-                    <span>Reel</span>
-                    <p>Create short vertical videos</p>
-                </div>
-                <div class="post-option" onclick="selectPostType('story')">
-                    <i class="fas fa-circle"></i>
-                    <span>Story</span>
-                    <p>Share temporary photos and videos</p>
-                </div>
+            <span class="modal-close" id="closeTermsModal">&times;</span>
+            <h3 class="modal-title">Terms and Conditions</h3>
+            <p class="modal-text">
+                By using this website, you agree that any actions you take during your use — including text, audio, photo, video communication — are solely your responsibility. Any illegal, abusive, or inappropriate activity is strictly prohibited. The creator or owner of this website will not be held liable for user actions. In case of any violation of laws, the individual user will be solely responsible and may be reported to authorities if required.
+            </p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="agreeBtn">Agree</button>
             </div>
         </div>
     </div>
 
-    <!-- Story Viewer Modal -->
-    <div id="storyViewerModal" class="modal fullscreen">
-        <div class="story-viewer">
-            <div class="story-header">
-                <div class="story-user-info">
-                    <img id="storyUserAvatar" src="" alt="User Avatar">
-                    <span id="storyUsername">username</span>
-                    <span id="storyTime">2h</span>
+    <!-- Chat Interface -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <div class="chat-exit" id="chatExitBtn">&times;</div>
+            <div class="chat-title">Omegle Clone</div>
+            <div class="chat-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="chat-input-container">
+            <button class="attach-btn" id="attachBtn">+
+                <div class="attach-menu" id="attachMenu">
+                    <div class="attach-option" id="sendLocation">Send Location</div>
+                    <div class="attach-option" id="sendPhoto">Send Photo</div>
+                    <div class="attach-option" id="sendVideo">Send Video</div>
                 </div>
-                <span class="close" onclick="closeStoryViewer()">&times;</span>
+            </button>
+            <input type="text" class="chat-input" id="messageInput" placeholder="Type your message...">
+            <button class="send-btn" id="sendBtn">&#10148;</button>
+            <button class="connect-btn" id="connectBtn">
+                <div class="connect-icon"></div>
+                <span>Connect</span>
+            </button>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" class="hidden-file-input">
+        <input type="file" id="videoInput" accept="video/*" class="hidden-file-input">
+    </div>
+
+    <!-- Video Chat Interface -->
+    <div class="video-container" id="videoContainer">
+        <div class="video-header">
+            <div class="video-exit" id="videoExitBtn">&times;</div>
+            <div class="video-title">Omegle Video Clone</div>
+        </div>
+        <div class="video-feeds">
+            <div class="video-feed remote">
+                <video class="video-element" id="remoteVideo" autoplay playsinline></video>
+                <div class="permission-prompt" id="videoPermissionPrompt">
+                    <p>Please allow camera and microphone access to start video chat</p>
+                    <button class="permission-btn" id="requestPermissionBtn">Allow Access</button>
+                </div>
             </div>
-            <div class="story-progress">
-                <div class="progress-bar"></div>
+            <div class="video-feed local">
+                <video class="video-element" id="localVideo" autoplay playsinline muted></video>
             </div>
-            <div class="story-content">
-                <img id="storyImage" src="" alt="Story">
+            <div class="video-controls">
+                <button class="control-btn" id="muteBtn">🔇</button>
+                <button class="control-btn" id="cameraBtn">📷</button>
+                <button class="control-btn end-call" id="endCallBtn">✕</button>
             </div>
-            <div class="story-navigation">
-                <div class="story-nav-left" onclick="previousStory()"></div>
-                <div class="story-nav-right" onclick="nextStory()"></div>
+        </div>
+        <div class="video-chat">
+            <div class="chat-messages" id="videoChatMessages">
+                <!-- Video chat messages will appear here -->
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="videoMessageInput" placeholder="Type your message...">
+                <button class="send-btn" id="videoSendBtn">&#10148;</button>
             </div>
         </div>
     </div>
 
-    <!-- Chat Modal -->
-    <div id="chatModal" class="modal fullscreen">
-        <div class="chat-window">
-            <div class="chat-header">
-                <i class="fas fa-arrow-left back-btn" onclick="closeChatModal()"></i>
-                <div class="chat-user-info">
-                    <img id="chatUserAvatar" src="" alt="User Avatar">
-                    <div class="chat-user-details">
-                        <span id="chatUsername">username</span>
-                        <span id="chatUserStatus">Active now</span>
-                    </div>
-                </div>
-                <div class="chat-actions">
-                    <i class="fas fa-phone"></i>
-                    <i class="fas fa-video"></i>
-                </div>
-            </div>
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages will be loaded here -->
-            </div>
-            <div class="chat-input">
-                <i class="fas fa-smile emoji-btn"></i>
-                <input type="text" id="messageInput" placeholder="Type a message...">
-                <i class="fas fa-camera camera-btn"></i>
-                <i class="fas fa-microphone mic-btn"></i>
-                <i class="fas fa-paper-plane send-btn" onclick="sendMessage()"></i>
-            </div>
-        </div>
+    <!-- Message Context Menu -->
+    <div class="message-menu" id="messageMenu">
+        <div class="menu-item" id="deleteMessage">Delete</div>
+        <div class="menu-item" id="replyMessage">Reply</div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // DOM Elements
+        const homeScreen = document.getElementById('homeScreen');
+        const chatContainer = document.getElementById('chatContainer');
+        const videoContainer = document.getElementById('videoContainer');
+        const startChatBtn = document.getElementById('startChatBtn');
+        const startVideoBtn = document.getElementById('startVideoBtn');
+        const termsModal = document.getElementById('termsModal');
+        const closeTermsModal = document.getElementById('closeTermsModal');
+        const agreeBtn = document.getElementById('agreeBtn');
+        const chatExitBtn = document.getElementById('chatExitBtn');
+        const videoExitBtn = document.getElementById('videoExitBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const videoChatMessages = document.getElementById('videoChatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const videoMessageInput = document.getElementById('videoMessageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const videoSendBtn = document.getElementById('videoSendBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const connectBtn = document.getElementById('connectBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const attachMenu = document.getElementById('attachMenu');
+        const sendLocation = document.getElementById('sendLocation');
+        const sendPhoto = document.getElementById('sendPhoto');
+        const sendVideo = document.getElementById('sendVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const localVideo = document.getElementById('localVideo');
+        const muteBtn = document.getElementById('muteBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const endCallBtn = document.getElementById('endCallBtn');
+        const requestPermissionBtn = document.getElementById('requestPermissionBtn');
+        const videoPermissionPrompt = document.getElementById('videoPermissionPrompt');
+        const messageMenu = document.getElementById('messageMenu');
+        const deleteMessage = document.getElementById('deleteMessage');
+        const replyMessage = document.getElementById('replyMessage');
+        const termsLink = document.getElementById('termsLink');
+        const privacyLink = document.getElementById('privacyLink');
+        const dmcaLink = document.getElementById('dmcaLink');
+        const photoInput = document.getElementById('photoInput');
+        const videoInput = document.getElementById('videoInput');
+        const interestsInput = document.getElementById('interestsInput');
+
+        // Configuration
+        const WS_SERVER_URL = 'wss://omegle-i.onrender.com'; // Replace with your WebSocket server URL
+        const ICE_SERVERS = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+        ];
+
+        // State variables
+        let isConnected = false;
+        let isTyping = false;
+        let typingTimeout;
+        let currentChatType = null; // 'text' or 'video'
+        let selectedMessage = null;
+        let localStream = null;
+        let peerConnection = null;
+        let dataChannel = null;
+        let socket = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+
+        // Initialize the app
+        function init() {
+            setupEventListeners();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Home screen buttons
+            startChatBtn.addEventListener('click', () => {
+                currentChatType = 'text';
+                showTermsModal();
+            });
+            
+            startVideoBtn.addEventListener('click', () => {
+                currentChatType = 'video';
+                showTermsModal();
+            });
+            
+            // Terms modal
+            closeTermsModal.addEventListener('click', hideTermsModal);
+            agreeBtn.addEventListener('click', () => {
+                hideTermsModal();
+                if (currentChatType === 'text') {
+                    startTextChat();
+                } else {
+                    startVideoChat();
+                }
+            });
+            
+            // Chat interface
+            chatExitBtn.addEventListener('click', () => {
+                disconnect();
+                showHomeScreen();
+            });
+            
+            videoExitBtn.addEventListener('click', () => {
+                endVideoCall();
+                showHomeScreen();
+            });
+            
+            // Message input
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && messageInput.value.trim()) {
+                    sendMessage();
+                }
+                
+                if (!isTyping && messageInput.value) {
+                    isTyping = true;
+                    sendTypingStatus(true);
+                }
+            });
+            
+            messageInput.addEventListener('input', debounce(() => {
+                if (messageInput.value) {
+                    if (!isTyping) {
+                        isTyping = true;
+                        sendTypingStatus(true);
+                    }
+                } else {
+                    isTyping = false;
+                    sendTypingStatus(false);
+                }
+            }, 1000));
+            
+            videoMessageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && videoMessageInput.value.trim()) {
+                    sendVideoMessage();
+                }
+            });
+            
+            // Send buttons
+            sendBtn.addEventListener('click', sendMessage);
+            videoSendBtn.addEventListener('click', sendVideoMessage);
+            
+            // Connect button
+            connectBtn.addEventListener('click', toggleConnection);
+            
+            // Attachments
+            attachBtn.addEventListener('click', toggleAttachMenu);
+            sendLocation.addEventListener('click', () => {
+                sendLocationMessage();
+                hideAttachMenu();
+            });
+            sendPhoto.addEventListener('click', () => {
+                photoInput.click();
+                hideAttachMenu();
+            });
+            sendVideo.addEventListener('click', () => {
+                videoInput.click();
+                hideAttachMenu();
+            });
+            
+            // File inputs
+            photoInput.addEventListener('change', handleFileUpload);
+            videoInput.addEventListener('change', handleFileUpload);
+            
+            // Video controls
+            muteBtn.addEventListener('click', toggleMute);
+            cameraBtn.addEventListener('click', toggleCamera);
+            endCallBtn.addEventListener('click', endVideoCall);
+            requestPermissionBtn.addEventListener('click', requestPermissions);
+            
+            // Message context menu
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.message') && !e.target.closest('.message-menu')) {
+                    hideMessageMenu();
+                }
+            });
+            
+            // Footer links
+            termsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert("By using this website, you agree to comply with all applicable laws and not to use the service for any illegal activities. Users must be at least 18 years old or have parental permission to access the website. We reserve the right to terminate or restrict your access at any time for violating our policies or engaging in inappropriate behavior. You are solely responsible for your interactions and activities on this platform.");
+            });
+            
+            privacyLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert("We value your privacy. This website may collect minimal data such as IP address, browser type, and usage activity for analytical and security purposes. We do not sell or share your personal information with third parties, except as required by law. By using this site, you consent to the collection and use of information in accordance with this policy.");
+            });
+            
+            dmcaLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert("We respect copyright laws and comply with the Digital Millennium Copyright Act (DMCA). If you believe that any content on this site infringes upon your copyright, please contact us with proper documentation, and we will take appropriate action.");
+            });
+            
+            // Long press for message menu
+            document.addEventListener('contextmenu', (e) => {
+                if (e.target.closest('.message')) {
+                    e.preventDefault();
+                    showMessageMenu(e.target.closest('.message'), e.clientX, e.clientY);
+                }
+            });
+            
+            deleteMessage.addEventListener('click', () => {
+                if (selectedMessage) {
+                    selectedMessage.remove();
+                    hideMessageMenu();
+                }
+            });
+            
+            replyMessage.addEventListener('click', () => {
+                if (selectedMessage) {
+                    const messageText = selectedMessage.textContent;
+                    if (currentChatType === 'text') {
+                        messageInput.value = `Replying to: ${messageText}`;
+                        messageInput.focus();
+                    } else {
+                        videoMessageInput.value = `Replying to: ${messageText}`;
+                        videoMessageInput.focus();
+                    }
+                    hideMessageMenu();
+                }
+            });
+
+            // Handle window close
+            window.addEventListener('beforeunload', () => {
+                disconnect();
+            });
+        }
+
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                return;
+            }
+
+            socket = new WebSocket(WS_SERVER_URL);
+
+            socket.onopen = () => {
+                console.log("WebSocket connected");
+                reconnectAttempts = 0;
+                updateConnectionStatus(true);
+                addSystemMessage("Connected to server");
+
+                // Join the appropriate queue based on chat type
+                const message = {
+                    type: 'join',
+                    chatType: currentChatType,
+                    interests: interestsInput.value.trim()
+                };
+                socket.send(JSON.stringify(message));
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("Message received:", data);
+
+                switch (data.type) {
+                    case 'connected':
+                        handleStrangerConnected(data);
+                        break;
+                    case 'message':
+                        handleReceivedMessage(data);
+                        break;
+                    case 'typing':
+                        handleTypingIndicator(data);
+                        break;
+                    case 'offer':
+                        handleOffer(data);
+                        break;
+                    case 'answer':
+                        handleAnswer(data);
+                        break;
+                    case 'ice-candidate':
+                        handleICECandidate(data);
+                        break;
+                    case 'file':
+                        handleReceivedFile(data);
+                        break;
+                    case 'disconnected':
+                        handleStrangerDisconnected();
+                        break;
+                    case 'error':
+                        handleError(data.message);
+                        break;
+                }
+            };
+
+            socket.onclose = (event) => {
+                console.log("WebSocket closed:", event);
+                updateConnectionStatus(false);
+                addSystemMessage("Disconnected from server");
+                
+                if (event.code !== 1000 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    const delay = Math.min(1000 * (reconnectAttempts + 1), 5000);
+                    console.log(`Reconnecting in ${delay}ms...`);
+                    setTimeout(connectWebSocket, delay);
+                    reconnectAttempts++;
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                handleError("Connection error occurred");
+            };
+        }
+
+        // Disconnect WebSocket
+        function disconnect() {
+            if (socket) {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'leave' }));
+                    socket.close();
+                }
+                socket = null;
+            }
+            isConnected = false;
+            updateConnectionStatus(false);
+        }
+
+        // Handle stranger connected
+        function handleStrangerConnected(data) {
+            isConnected = true;
+            updateConnectionStatus(true);
+            
+            if (currentChatType === 'text') {
+                addSystemMessage("Connected to a stranger");
+                // Start typing indicator simulation
+                setTimeout(() => {
+                    addTypingIndicator();
+                    setTimeout(() => {
+                        removeTypingIndicator();
+                        addStrangerMessage("Hi there! How are you?");
+                    }, 2000);
+                }, 1000);
+            } else {
+                addVideoSystemMessage("Connected to a stranger");
+                // Initialize WebRTC
+                initializeWebRTC(true);
+            }
+        }
+
+        // Handle received message
+        function handleReceivedMessage(data) {
+            if (currentChatType === 'text') {
+                addStrangerMessage(data.message);
+            } else {
+                addVideoStrangerMessage(data.message);
+            }
+        }
+
+        // Handle typing indicator
+        function handleTypingIndicator(data) {
+            if (data.isTyping) {
+                addTypingIndicator();
+            } else {
+                removeTypingIndicator();
+            }
+        }
+
+        // Handle WebRTC offer
+        function handleOffer(data) {
+            if (currentChatType !== 'video') return;
+            
+            if (!peerConnection) {
+                initializeWebRTC(false);
+            }
+            
+            const offer = new RTCSessionDescription(data.offer);
+            peerConnection.setRemoteDescription(offer)
+                .then(() => peerConnection.createAnswer())
+                .then(answer => peerConnection.setLocalDescription(answer))
+                .then(() => {
+                    socket.send(JSON.stringify({
+                        type: 'answer',
+                        answer: peerConnection.localDescription
+                    }));
+                })
+                .catch(handleError);
+        }
+
+        // Handle WebRTC answer
+        function handleAnswer(data) {
+            if (!peerConnection) return;
+            
+            const answer = new RTCSessionDescription(data.answer);
+            peerConnection.setRemoteDescription(answer)
+                .catch(handleError);
+        }
+
+        // Handle ICE candidate
+        function handleICECandidate(data) {
+            if (!peerConnection) return;
+            
+            const candidate = new RTCIceCandidate(data.candidate);
+            peerConnection.addIceCandidate(candidate)
+                .catch(handleError);
+        }
+
+        // Handle received file
+        function handleReceivedFile(data) {
+            const fileType = data.fileType;
+            const fileData = data.fileData;
+            
+            if (fileType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = fileData;
+                img.className = 'file-preview';
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message stranger';
+                messageDiv.textContent = 'Stranger sent an image:';
+                messageDiv.appendChild(img);
+                
+                if (currentChatType === 'text') {
+                    chatMessages.appendChild(messageDiv);
+                } else {
+                    videoChatMessages.appendChild(messageDiv);
+                }
+            } else if (fileType.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = fileData;
+                video.controls = true;
+                video.className = 'file-preview';
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message stranger';
+                messageDiv.textContent = 'Stranger sent a video:';
+                messageDiv.appendChild(video);
+                
+                if (currentChatType === 'text') {
+                    chatMessages.appendChild(messageDiv);
+                } else {
+                    videoChatMessages.appendChild(messageDiv);
+                }
+            }
+            
+            scrollToBottom(currentChatType === 'text' ? chatMessages : videoChatMessages);
+        }
+
+        // Handle stranger disconnected
+        function handleStrangerDisconnected() {
+            isConnected = false;
+            updateConnectionStatus(false);
+            
+            if (currentChatType === 'text') {
+                addSystemMessage("Stranger has disconnected");
+                setTimeout(() => {
+                    socket.send(JSON.stringify({ type: 'find' }));
+                }, 2000);
+            } else {
+                addVideoSystemMessage("Stranger has disconnected");
+                endVideoCall();
+                setTimeout(() => {
+                    socket.send(JSON.stringify({ type: 'find' }));
+                }, 2000);
+            }
+        }
+
+        // Handle errors
+        function handleError(message) {
+            console.error("Error:", message);
+            if (currentChatType === 'text') {
+                addSystemMessage(`Error: ${message}`);
+            } else {
+                addVideoSystemMessage(`Error: ${message}`);
+            }
+        }
+
+        // Initialize WebRTC connection
+        function initializeWebRTC(isInitiator) {
+            peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+            // Add local stream to connection
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+
+            // Set up data channel if initiator
+            if (isInitiator) {
+                dataChannel = peerConnection.createDataChannel('chat');
+                setupDataChannel(dataChannel);
+            } else {
+                peerConnection.ondatachannel = (event) => {
+                    dataChannel = event.channel;
+                    setupDataChannel(dataChannel);
+                };
+            }
+
+            // ICE candidate handler
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.send(JSON.stringify({
+                        type: 'ice-candidate',
+                        candidate: event.candidate
+                    }));
+                }
+            };
+
+            // Track handlers
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+
+            // Create offer if initiator
+            if (isInitiator) {
+                peerConnection.createOffer()
+                    .then(offer => peerConnection.setLocalDescription(offer))
+                    .then(() => {
+                        socket.send(JSON.stringify({
+                            type: 'offer',
+                            offer: peerConnection.localDescription
+                        }));
+                    })
+                    .catch(handleError);
+            }
+        }
+
+        // Set up data channel
+        function setupDataChannel(channel) {
+            channel.onopen = () => {
+                console.log("Data channel opened");
+            };
+
+            channel.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'message') {
+                    if (currentChatType === 'text') {
+                        addStrangerMessage(data.content);
+                    } else {
+                        addVideoStrangerMessage(data.content);
+                    }
+                } else if (data.type === 'file') {
+                    handleReceivedFile(data);
+                }
+            };
+
+            channel.onclose = () => {
+                console.log("Data channel closed");
+            };
+        }
+
+        // Show terms modal
+        function showTermsModal() {
+            termsModal.style.display = 'flex';
+        }
+
+        // Hide terms modal
+        function hideTermsModal() {
+            termsModal.style.display = 'none';
+        }
+
+        // Show home screen
+        function showHomeScreen() {
+            homeScreen.style.display = 'flex';
+            chatContainer.style.display = 'none';
+            videoContainer.style.display = 'none';
+            
+            // Clean up
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (dataChannel) {
+                dataChannel.close();
+                dataChannel = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            disconnect();
+        }
+
+        // Start text chat
+        function startTextChat() {
+            homeScreen.style.display = 'none';
+            chatContainer.style.display = 'flex';
+            videoContainer.style.display = 'none';
+            
+            // Clear previous messages
+            chatMessages.innerHTML = '';
+            
+            // Connect to server
+            connectWebSocket();
+        }
+
+        // Start video chat
+        function startVideoChat() {
+            homeScreen.style.display = 'none';
+            chatContainer.style.display = 'none';
+            videoContainer.style.display = 'flex';
+            
+            // Clear previous messages
+            videoChatMessages.innerHTML = '';
+            
+            // Show permission prompt
+            videoPermissionPrompt.classList.add('show');
+            
+            // Connect to server
+            connectWebSocket();
+        }
+
+        // Request camera/mic permissions
+        function requestPermissions() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    localStream = stream;
+                    localVideo.srcObject = stream;
+                    videoPermissionPrompt.classList.remove('show');
+                    addVideoSystemMessage("Video chat started");
+                    
+                    // Initialize WebRTC after getting media
+                    if (isConnected) {
+                        initializeWebRTC(true);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error accessing media devices:", err);
+                    handleError("Could not access camera and microphone. Please check your permissions.");
+                });
+        }
+
+        // Toggle connection status
+        function toggleConnection() {
+            if (isConnected) {
+                socket.send(JSON.stringify({ type: 'disconnect' }));
+                connectBtn.classList.add('disconnected');
+                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Disconnected</span>';
+            } else {
+                socket.send(JSON.stringify({ type: 'find' }));
+                connectBtn.classList.remove('disconnected');
+                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Connect</span>';
+            }
+        }
+
+        // Update connection status UI
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            if (connected) {
+                statusIndicator.classList.add('connected');
+                statusText.textContent = 'Connected';
+                connectBtn.classList.remove('disconnected');
+                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Disconnect</span>';
+            } else {
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Disconnected';
+                connectBtn.classList.add('disconnected');
+                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Connect</span>';
+            }
+        }
+
+        // Send text message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            addUserMessage(message);
+            
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify({
+                    type: 'message',
+                    content: message
+                }));
+            } else if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'message',
+                    message: message
+                }));
+            }
+            
+            messageInput.value = '';
+            
+            if (typingTimeout) clearTimeout(typingTimeout);
+            isTyping = false;
+            sendTypingStatus(false);
+        }
+
+        // Send video chat message
+        function sendVideoMessage() {
+            const message = videoMessageInput.value.trim();
+            if (!message) return;
+            
+            addVideoUserMessage(message);
+            
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify({
+                    type: 'message',
+                    content: message
+                }));
+            }
+            
+            videoMessageInput.value = '';
+        }
+
+        // Send typing status
+        function sendTypingStatus(isTyping) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'typing',
+                    isTyping: isTyping
+                }));
+            }
+        }
+
+        // Send location message
+        function sendLocationMessage() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const { latitude, longitude } = position.coords;
+                        const message = `My location: https://www.google.com/maps?q=${latitude},${longitude}`;
+                        
+                        if (currentChatType === 'text') {
+                            addUserMessage(message);
+                            socket.send(JSON.stringify({
+                                type: 'message',
+                                message: message
+                            }));
+                        } else {
+                            addVideoUserMessage(message);
+                            if (dataChannel && dataChannel.readyState === 'open') {
+                                dataChannel.send(JSON.stringify({
+                                    type: 'message',
+                                    content: message
+                                }));
+                            }
+                        }
+                    },
+                    error => {
+                        console.error("Error getting location:", error);
+                        handleError("Could not get your location. Please check your permissions.");
+                    }
+                );
+            } else {
+                handleError("Geolocation is not supported by your browser");
+            }
+        }
+
+        // Handle file upload
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const fileData = event.target.result;
+                
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = fileData;
+                    img.className = 'file-preview';
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message user';
+                    messageDiv.textContent = 'You sent an image:';
+                    messageDiv.appendChild(img);
+                    
+                    if (currentChatType === 'text') {
+                        chatMessages.appendChild(messageDiv);
+                        
+                        // Send via WebSocket
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({
+                                type: 'file',
+                                fileType: file.type,
+                                fileData: fileData
+                            }));
+                        }
+                    } else {
+                        videoChatMessages.appendChild(messageDiv);
+                        
+                        // Send via data channel
+                        if (dataChannel && dataChannel.readyState === 'open') {
+                            dataChannel.send(JSON.stringify({
+                                type: 'file',
+                                fileType: file.type,
+                                fileData: fileData
+                            }));
+                        }
+                    }
+                } else if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = fileData;
+                    video.controls = true;
+                    video.className = 'file-preview';
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message user';
+                    messageDiv.textContent = 'You sent a video:';
+                    messageDiv.appendChild(video);
+                    
+                    if (currentChatType === 'text') {
+                        chatMessages.appendChild(messageDiv);
+                        
+                        // Send via WebSocket
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({
+                                type: 'file',
+                                fileType: file.type,
+                                fileData: fileData
+                            }));
+                        }
+                    } else {
+                        videoChatMessages.appendChild(messageDiv);
+                        
+                        // Send via data channel
+                        if (dataChannel && dataChannel.readyState === 'open') {
+                            dataChannel.send(JSON.stringify({
+                                type: 'file',
+                                fileType: file.type,
+                                fileData: fileData
+                            }));
+                        }
+                    }
+                }
+                
+                scrollToBottom(currentChatType === 'text' ? chatMessages : videoChatMessages);
+            };
+            
+            reader.readAsDataURL(file);
+            e.target.value = ''; // Reset input
+        }
+
+        // Add user message to chat
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Add stranger message to chat
+        function addStrangerMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message stranger';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Add system message to chat
+        function addSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Add typing indicator
+        function addTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.textContent = 'Stranger is typing...';
+            typingDiv.id = 'typingIndicator';
+            chatMessages.appendChild(typingDiv);
+            scrollToBottom(chatMessages);
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) typingDiv.remove();
+        }
+
+        // Add video user message
+        function addVideoUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            videoChatMessages.appendChild(messageDiv);
+            scrollToBottom(videoChatMessages);
+        }
+
+        // Add video stranger message
+        function addVideoStrangerMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message stranger';
+            messageDiv.textContent = text;
+            
+            // Add long press event
+            messageDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMessageMenu(messageDiv, e.clientX, e.clientY);
+            });
+            
+            videoChatMessages.appendChild(messageDiv);
+            scrollToBottom(videoChatMessages);
+        }
+
+        // Add video system message
+        function addVideoSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            videoChatMessages.appendChild(messageDiv);
+            scrollToBottom(videoChatMessages);
+        }
+
+        // Toggle attach menu
+        function toggleAttachMenu() {
+            attachMenu.classList.toggle('show');
+        }
+
+        // Hide attach menu
+        function hideAttachMenu() {
+            attachMenu.classList.remove('show');
+        }
+
+        // Toggle mute
+        function toggleMute() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    const isMuted = audioTracks[0].enabled;
+                    audioTracks[0].enabled = !isMuted;
+                    muteBtn.textContent = isMuted ? '🔈' : '🔇';
+                }
+            }
+        }
+
+        // Toggle camera
+        function toggleCamera() {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                    const isOn = videoTracks[0].enabled;
+                    videoTracks[0].enabled = !isOn;
+                    cameraBtn.textContent = isOn ? '📷' : '❌';
+                }
+            }
+        }
+
+        // End video call
+        function endVideoCall() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            if (dataChannel) {
+                dataChannel.close();
+                dataChannel = null;
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+                localVideo.srcObject = null;
+            }
+            
+            remoteVideo.srcObject = null;
+            addVideoSystemMessage("Video chat ended");
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'disconnect' }));
+            }
+        }
+
+        // Show message context menu
+        function showMessageMenu(messageElement, x, y) {
+            selectedMessage = messageElement;
+            messageMenu.style.left = `${x}px`;
+            messageMenu.style.top = `${y}px`;
+            messageMenu.classList.add('show');
+        }
+
+        // Hide message context menu
+        function hideMessageMenu() {
+            messageMenu.classList.remove('show');
+        }
+
+        // Scroll to bottom of chat
+        function scrollToBottom(element) {
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
+
+        // Initialize the app
+        init();
+    </script>
 </body>
 </html>
