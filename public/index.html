@@ -787,7 +787,7 @@
         const interestsInput = document.getElementById('interestsInput');
 
         // Configuration
-        const WSS_URL = 'wss://omegle-i.onrender.com'; // Replace with your WebSocket server URL
+        const WS_SERVER_URL = 'wss://your-websocket-server-url.com'; // Replace with your WebSocket server URL
         const ICE_SERVERS = [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
@@ -967,115 +967,13 @@
             });
         }
 
-        // Toggle connection status for text chat
-        function toggleConnection() {
-            const connectBtn = document.getElementById('connectBtn');
-            // Assuming statusText is the correct element for text chat connection status updates
-            const connectionStatusEl = document.getElementById('statusText'); 
-
-            if (!socket || socket.readyState === WebSocket.CLOSED) {
-                // Current state is disconnected, user wants to connect
-                if (connectBtn) {
-                    connectBtn.querySelector('span').textContent = 'Disconnect';
-                    connectBtn.classList.remove('btn-primary'); // Assuming these classes exist
-                    connectBtn.classList.add('btn-secondary');
-                }
-                if(connectionStatusEl) connectionStatusEl.textContent = 'Connecting...';
-                addSystemMessage("Connecting...");
-
-                socket = new WebSocket(WSS_URL); // Uses the global WSS_URL
-
-                socket.onopen = () => {
-                    if(connectionStatusEl) connectionStatusEl.textContent = 'Connected';
-                    addSystemMessage("Connected. You can now chat.");
-                    isConnected = true; // Update general connection state
-                    updateConnectionStatus(true); // Update UI elements reflecting connection
-                    const interests = interestsInput.value.split(',').map(s => s.trim()).filter(s => s);
-                    if (interests.length > 0) {
-                        socket.send(JSON.stringify({ type: 'interests', data: interests }));
-                    }
-                     // Automatically try to find a partner after connecting for text chat
-                    if (currentChatType === 'text') {
-                        socket.send(JSON.stringify({ type: 'find' }));
-                    }
-                };
-
-                socket.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    console.log("Text chat message received:", message); 
-                    // Delegate to the main message handler if it exists and is appropriate
-                    // For now, handling basic text chat messages directly
-                    if (message.type === 'text') {
-                        addStrangerMessage(message.data);
-                    } else if (message.type === 'typing') {
-                        // Assuming typingIndicator is handled by sendTypingStatus and its counterpart
-                        // typingIndicator.style.display = message.data ? 'block' : 'none';
-                    } else if (message.type === 'partnerDisconnected') {
-                        addSystemMessage("Stranger has disconnected.");
-                        isConnected = false;
-                        updateConnectionStatus(false);
-                        // Optionally, try to find a new partner automatically for text chat
-                        if (currentChatType === 'text') {
-                             addSystemMessage("Finding new partner...");
-                             socket.send(JSON.stringify({ type: 'find' }));
-                        }
-                    } else if (message.type === 'foundPartner') {
-                        addSystemMessage("Found a partner! Say hi.");
-                        isConnected = true; // Ensure state reflects connected to partner
-                        updateConnectionStatus(true, true); // Update UI, indicating partner found
-                    } else if (message.type === 'system') {
-                        addSystemMessage(message.data);
-                    } else {
-                        // If a generic handleMessage exists for other types (like WebRTC signaling)
-                        // handleMessage(message); 
-                    }
-                };
-
-                socket.onclose = () => {
-                    if(connectionStatusEl) connectionStatusEl.textContent = 'Disconnected';
-                    addSystemMessage("Connection closed.");
-                    if (connectBtn) {
-                        connectBtn.querySelector('span').textContent = 'Connect';
-                        connectBtn.classList.remove('btn-secondary');
-                        connectBtn.classList.add('btn-primary');
-                    }
-                    socket = null; 
-                    isConnected = false;
-                    updateConnectionStatus(false);
-                };
-
-                socket.onerror = (error) => {
-                    console.error("WebSocket Error:", error);
-                    addSystemMessage("Connection error. Please try again.");
-                    if(connectionStatusEl) connectionStatusEl.textContent = 'Error';
-                     if (connectBtn) {
-                        connectBtn.querySelector('span').textContent = 'Connect';
-                        connectBtn.classList.remove('btn-secondary');
-                        connectBtn.classList.add('btn-primary');
-                    }
-                    if (socket) {
-                        socket.close(); 
-                        socket = null;
-                    }
-                    isConnected = false;
-                    updateConnectionStatus(false);
-                };
-
-            } else if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-                // Current state is connected/connecting, user wants to disconnect
-                addSystemMessage("Disconnecting...");
-                socket.close();
-                // onclose handler will update button text and status
-            }
-        }
-
         // Initialize WebSocket connection
         function connectWebSocket() {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 return;
             }
 
-            socket = new WebSocket(WSS_URL);
+            socket = new WebSocket(WS_SERVER_URL);
 
             socket.onopen = () => {
                 console.log("WebSocket connected");
@@ -1430,32 +1328,14 @@
         }
 
         // Start video chat
-        async function startVideoChat() {
-            if (currentChatType !== 'video') return;
-
-            videoChatMessages.innerHTML = ''; // Clear previous messages
-            addVideoSystemMessage("Starting video chat...");
-
-            try {
-                await initMedia(); // Attempt to get media, this will trigger permission popup if needed
-                // If initMedia is successful, we have the local stream
-                // UI updates for video chat active state
-                document.getElementById('localVideo').classList.remove('placeholder');
-                document.getElementById('remoteVideo').classList.remove('placeholder');
-                document.getElementById('requestPermissionBtn').style.display = 'none'; // Hide button on success
-                
-                connectSocket(); // Connect WebSocket for signaling
-
-                // Show relevant controls
-                muteBtn.style.display = 'inline-flex';
-                cameraBtn.style.display = 'inline-flex';
-                endCallBtn.style.display = 'inline-flex';
-
-            } catch (error) {
-                console.error("Error starting video chat:", error);
-                addVideoSystemMessage("Error starting video chat: " + error.message + ". Please ensure camera/microphone permissions are granted in your browser settings, then click 'Allow Camera/Mic Access' if shown.");
-                document.getElementById('requestPermissionBtn').style.display = 'inline-block'; // Show button on failure for manual retry
-            }
+        function startVideoChat() {
+            homeScreen.style.display = 'none';
+            chatContainer.style.display = 'none';
+            videoContainer.style.display = 'flex';
+            
+            // Clear previous messages
+            videoChatMessages.innerHTML = '';
+            
             // Show permission prompt
             videoPermissionPrompt.classList.add('show');
             
