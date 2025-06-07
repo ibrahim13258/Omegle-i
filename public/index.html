@@ -787,7 +787,7 @@
         const interestsInput = document.getElementById('interestsInput');
 
         // Configuration
-        const WS_SERVER_URL = 'wss://omegle-i.onrender.com'; // Replace with your WebSocket server URL
+        const WSS_URL = 'wss://your-websocket-server-url.com'; // Replace with your WebSocket server URL
         const ICE_SERVERS = [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
@@ -967,13 +967,115 @@
             });
         }
 
+        // Toggle connection status for text chat
+        function toggleConnection() {
+            const connectBtn = document.getElementById('connectBtn');
+            // Assuming statusText is the correct element for text chat connection status updates
+            const connectionStatusEl = document.getElementById('statusText'); 
+
+            if (!socket || socket.readyState === WebSocket.CLOSED) {
+                // Current state is disconnected, user wants to connect
+                if (connectBtn) {
+                    connectBtn.querySelector('span').textContent = 'Disconnect';
+                    connectBtn.classList.remove('btn-primary'); // Assuming these classes exist
+                    connectBtn.classList.add('btn-secondary');
+                }
+                if(connectionStatusEl) connectionStatusEl.textContent = 'Connecting...';
+                addSystemMessage("Connecting...");
+
+                socket = new WebSocket(WSS_URL); // Uses the global WSS_URL
+
+                socket.onopen = () => {
+                    if(connectionStatusEl) connectionStatusEl.textContent = 'Connected';
+                    addSystemMessage("Connected. You can now chat.");
+                    isConnected = true; // Update general connection state
+                    updateConnectionStatus(true); // Update UI elements reflecting connection
+                    const interests = interestsInput.value.split(',').map(s => s.trim()).filter(s => s);
+                    if (interests.length > 0) {
+                        socket.send(JSON.stringify({ type: 'interests', data: interests }));
+                    }
+                     // Automatically try to find a partner after connecting for text chat
+                    if (currentChatType === 'text') {
+                        socket.send(JSON.stringify({ type: 'find' }));
+                    }
+                };
+
+                socket.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    console.log("Text chat message received:", message); 
+                    // Delegate to the main message handler if it exists and is appropriate
+                    // For now, handling basic text chat messages directly
+                    if (message.type === 'text') {
+                        addStrangerMessage(message.data);
+                    } else if (message.type === 'typing') {
+                        // Assuming typingIndicator is handled by sendTypingStatus and its counterpart
+                        // typingIndicator.style.display = message.data ? 'block' : 'none';
+                    } else if (message.type === 'partnerDisconnected') {
+                        addSystemMessage("Stranger has disconnected.");
+                        isConnected = false;
+                        updateConnectionStatus(false);
+                        // Optionally, try to find a new partner automatically for text chat
+                        if (currentChatType === 'text') {
+                             addSystemMessage("Finding new partner...");
+                             socket.send(JSON.stringify({ type: 'find' }));
+                        }
+                    } else if (message.type === 'foundPartner') {
+                        addSystemMessage("Found a partner! Say hi.");
+                        isConnected = true; // Ensure state reflects connected to partner
+                        updateConnectionStatus(true, true); // Update UI, indicating partner found
+                    } else if (message.type === 'system') {
+                        addSystemMessage(message.data);
+                    } else {
+                        // If a generic handleMessage exists for other types (like WebRTC signaling)
+                        // handleMessage(message); 
+                    }
+                };
+
+                socket.onclose = () => {
+                    if(connectionStatusEl) connectionStatusEl.textContent = 'Disconnected';
+                    addSystemMessage("Connection closed.");
+                    if (connectBtn) {
+                        connectBtn.querySelector('span').textContent = 'Connect';
+                        connectBtn.classList.remove('btn-secondary');
+                        connectBtn.classList.add('btn-primary');
+                    }
+                    socket = null; 
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                };
+
+                socket.onerror = (error) => {
+                    console.error("WebSocket Error:", error);
+                    addSystemMessage("Connection error. Please try again.");
+                    if(connectionStatusEl) connectionStatusEl.textContent = 'Error';
+                     if (connectBtn) {
+                        connectBtn.querySelector('span').textContent = 'Connect';
+                        connectBtn.classList.remove('btn-secondary');
+                        connectBtn.classList.add('btn-primary');
+                    }
+                    if (socket) {
+                        socket.close(); 
+                        socket = null;
+                    }
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                };
+
+            } else if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+                // Current state is connected/connecting, user wants to disconnect
+                addSystemMessage("Disconnecting...");
+                socket.close();
+                // onclose handler will update button text and status
+            }
+        }
+
         // Initialize WebSocket connection
         function connectWebSocket() {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 return;
             }
 
-            socket = new WebSocket(WS_SERVER_URL);
+            socket = new WebSocket(WSS_URL);
 
             socket.onopen = () => {
                 console.log("WebSocket connected");
@@ -1284,145 +1386,34 @@
 
         // Show terms modal
         function showTermsModal() {
-            try {
-                termsModal.style.display = 'flex';
-                closeTermsModal.addEventListener('click', hideTermsModal);
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        hideTermsModal();
-                    }
-                });
-            } catch (error) {
-                console.error('Error showing terms modal:', error);
-                handleError('Failed to show terms modal', CONNECTION_STATUS.ERROR);
-            }
+            termsModal.style.display = 'flex';
         }
 
         // Hide terms modal
         function hideTermsModal() {
-            try {
-                termsModal.classList.remove('show');
-                // Remove event listeners
-                closeTermsModal.removeEventListener('click', hideTermsModal);
-                document.removeEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        hideTermsModal();
-                    }
-                });
-            } catch (error) {
-                console.error('Error hiding terms modal:', error);
-                handleError('Failed to hide terms modal', CONNECTION_STATUS.ERROR);
-            }
-        }
-
-        // Set up event listeners
-        function setupEventListeners() {
-            // Home screen buttons
-            startChatBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    currentChatType = 'text';
-                    
-                    // Show terms modal
-                    showTermsModal();
-                    
-                } catch (error) {
-                    console.error('Error showing terms modal:', error);
-                    handleError('Failed to show terms modal', CONNECTION_STATUS.ERROR);
-                }
-            });
-            
-            startVideoBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    currentChatType = 'video';
-                    
-                    // Show terms modal
-                    showTermsModal();
-                    
-                } catch (error) {
-                    console.error('Error showing terms modal:', error);
-                    handleError('Failed to show terms modal', CONNECTION_STATUS.ERROR);
-                }
-            });
-            
-            // Terms modal buttons
-            agreeBtn.addEventListener('click', handleAgreeClick);
-            closeTermsModal.addEventListener('click', handleCancelClick);
-            
-            // Keyboard events
-            document.addEventListener('keydown', handleEscapeKey);
-        }
-
-        // Handle cancel button click
-        function handleCancelClick() {
-            try {
-                // Reset chat type
-                currentChatType = null;
-                
-                // Hide modal
-                hideTermsModal();
-                
-                // Show home screen
-                showHomeScreen();
-                
-            } catch (error) {
-                console.error('Error handling cancel:', error);
-                handleError('Failed to handle cancel', CONNECTION_STATUS.ERROR);
-            }
+            termsModal.style.display = 'none';
         }
 
         // Show home screen
         function showHomeScreen() {
-            try {
-                // Reset UI
-                homeScreen.style.display = 'flex';
-                chatContainer.style.display = 'none';
-                videoContainer.style.display = 'none';
-                
-                // Reset chat state
-                currentChatType = null;
-                isConnected = false;
-                updateConnectionStatus(false);
-                
-                // Reset inputs
-                if (messageInput) messageInput.value = '';
-                if (videoMessageInput) videoMessageInput.value = '';
-                
-                // Clear messages
-                chatMessages.innerHTML = '';
-                videoChatMessages.innerHTML = '';
-                
-                // Reset typing
-                isTyping = false;
-                if (typingTimeout) clearTimeout(typingTimeout);
-                
-                // Cleanup media
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    localStream = null;
-                    localVideo.srcObject = null;
-                }
-                
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                
-                // Reset WebSocket if needed
-                if (socket) {
-                    socket.close();
-                    socket = null;
-                }
-                
-                addSystemMessage('Welcome back to the home screen');
-                
-            } catch (error) {
-                console.error('Error showing home screen:', error);
-                handleError('Failed to show home screen', CONNECTION_STATUS.ERROR);
+            homeScreen.style.display = 'flex';
+            chatContainer.style.display = 'none';
+            videoContainer.style.display = 'none';
+            
+            // Clean up
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
             }
+            if (dataChannel) {
+                dataChannel.close();
+                dataChannel = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            disconnect();
         }
 
         // Start text chat
@@ -1440,54 +1431,56 @@
 
         // Start video chat
         async function startVideoChat() {
+            if (currentChatType !== 'video') return;
+
+            videoChatMessages.innerHTML = ''; // Clear previous messages
+            addVideoSystemMessage("Starting video chat...");
+
             try {
-                // Show loading state
-                homeScreen.style.display = 'none';
-                chatContainer.style.display = 'none';
-                videoContainer.style.display = 'flex';
+                await initMedia(); // Attempt to get media, this will trigger permission popup if needed
+                // If initMedia is successful, we have the local stream
+                // UI updates for video chat active state
+                document.getElementById('localVideo').classList.remove('placeholder');
+                document.getElementById('remoteVideo').classList.remove('placeholder');
+                document.getElementById('requestPermissionBtn').style.display = 'none'; // Hide button on success
                 
-                // Clear previous messages
-                videoChatMessages.innerHTML = '';
-                
-                // Show permission prompt container
-                videoPermissionPrompt.classList.add('show');
-                
-                // Connect to server first
-                await connectWebSocket();
-                
-                // Request permissions
-                await requestPermissions();
-                
-                // Set up event listeners for video chat
-                videoMessageInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && videoMessageInput.value.trim()) {
-                        sendVideoMessage();
-                    }
-                });
-                
-                videoSendBtn.addEventListener('click', sendVideoMessage);
-                
-                muteBtn.addEventListener('click', toggleMute);
-                cameraBtn.addEventListener('click', toggleCamera);
-                endCallBtn.addEventListener('click', endVideoCall);
-                
+                connectSocket(); // Connect WebSocket for signaling
+
+                // Show relevant controls
+                muteBtn.style.display = 'inline-flex';
+                cameraBtn.style.display = 'inline-flex';
+                endCallBtn.style.display = 'inline-flex';
+
             } catch (error) {
-                console.error('Error starting video chat:', error);
-                handleError('Failed to start video chat', CONNECTION_STATUS.ERROR);
-                
-                // Show error message
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message';
-                errorDiv.innerHTML = `
-                    <p>Failed to start video chat. Please try again.</p>
-                    <button class="retry-button" onclick="startVideoChat()">Try Again</button>
-                `;
-                videoContainer.appendChild(errorDiv);
-                
-                // Show home screen
-                homeScreen.style.display = 'flex';
-                videoContainer.style.display = 'none';
+                console.error("Error starting video chat:", error);
+                addVideoSystemMessage("Error starting video chat: " + error.message + ". Please ensure camera/microphone permissions are granted in your browser settings, then click 'Allow Camera/Mic Access' if shown.");
+                document.getElementById('requestPermissionBtn').style.display = 'inline-block'; // Show button on failure for manual retry
             }
+            // Show permission prompt
+            videoPermissionPrompt.classList.add('show');
+            
+            // Connect to server
+            connectWebSocket();
+        }
+
+        // Request camera/mic permissions
+        function requestPermissions() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    localStream = stream;
+                    localVideo.srcObject = stream;
+                    videoPermissionPrompt.classList.remove('show');
+                    addVideoSystemMessage("Video chat started");
+                    
+                    // Initialize WebRTC after getting media
+                    if (isConnected) {
+                        initializeWebRTC(true);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error accessing media devices:", err);
+                    handleError("Could not access camera and microphone. Please check your permissions.");
+                });
         }
 
         // Toggle connection status
@@ -1603,75 +1596,6 @@
                 );
             } else {
                 handleError("Geolocation is not supported by your browser");
-            }
-        }
-
-        // Request camera/mic permissions
-        async function requestPermissions() {
-            try {
-                // Check if we have existing permissions
-                const existingPermissions = await navigator.permissions.query({ name: 'camera' });
-                
-                if (existingPermissions.state === 'denied') {
-                    throw new Error('Camera access has been permanently denied');
-                }
-
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: 'user'
-                    },
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        sampleRate: 44100
-                    }
-                });
-
-                // Clean up any existing media
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                }
-
-                localStream = stream;
-                localVideo.srcObject = stream;
-                videoPermissionPrompt.classList.remove('show');
-                addVideoSystemMessage("Video chat started");
-
-                // Initialize WebRTC after getting media
-                if (isConnected) {
-                    await initializeWebRTC(true);
-                }
-
-                // Add event listeners for media errors
-                stream.getTracks().forEach(track => {
-                    track.onended = () => {
-                        handleError("Media stream ended unexpectedly", CONNECTION_STATUS.ERROR);
-                    };
-                });
-
-            } catch (err) {
-                console.error("Error accessing media devices:", err);
-                let errorMessage = "Failed to access camera and microphone";
-                
-                if (err.name === 'NotAllowedError') {
-                    errorMessage = "Camera and microphone access denied";
-                } else if (err.name === 'NotFoundError') {
-                    errorMessage = "No camera or microphone found";
-                } else if (err.name === 'NotReadableError') {
-                    errorMessage = "Camera or microphone is in use by another application";
-                }
-
-                handleError(errorMessage, CONNECTION_STATUS.ERROR);
-                
-                // Show retry button
-                const retryBtn = document.createElement('button');
-                retryBtn.textContent = 'Try Again';
-                retryBtn.onclick = () => {
-                    requestPermissions();
-                };
-                videoPermissionPrompt.appendChild(retryBtn);
             }
         }
 
@@ -1808,40 +1732,22 @@
             typingDiv.textContent = 'Stranger is typing...';
             typingDiv.id = 'typingIndicator';
             chatMessages.appendChild(typingDiv);
+            scrollToBottom(chatMessages);
         }
 
         // Remove typing indicator
         function removeTypingIndicator() {
-            try {
-                const typingDiv = document.querySelector('.typing-indicator');
-                if (typingDiv) {
-                    typingDiv.remove();
-                }
-            } catch (error) {
-                console.error('Error removing typing indicator:', error);
-                handleError('Failed to remove typing indicator', CONNECTION_STATUS.ERROR);
-            }
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) typingDiv.remove();
         }
 
         // Add video user message
         function addVideoUserMessage(text) {
-            try {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message user';
-                messageDiv.textContent = text;
-                
-                // Add long press event
-                messageDiv.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    showMessageMenu(messageDiv, e.clientX, e.clientY);
-                });
-                
-                videoChatMessages.appendChild(messageDiv);
-                scrollToBottom(videoChatMessages);
-            } catch (error) {
-                console.error('Error adding video user message:', error);
-                handleError('Failed to add video user message', CONNECTION_STATUS.ERROR);
-            }
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.textContent = text;
+            
+            // Add long press event
             messageDiv.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 showMessageMenu(messageDiv, e.clientX, e.clientY);
@@ -1957,8 +1863,9 @@
         // Debounce function
         function debounce(func, wait) {
             let timeout;
-            return function(...args) {
+            return function() {
                 const context = this;
+                const args = arguments;
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
                     func.apply(context, args);
