@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1319,25 +1319,53 @@
 
         // Show home screen
         function showHomeScreen() {
-            homeScreen.style.display = 'flex';
-            chatContainer.style.display = 'none';
-            videoContainer.style.display = 'none';
-            
-            // Clean up
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
+            try {
+                // Reset UI
+                homeScreen.style.display = 'flex';
+                chatContainer.style.display = 'none';
+                videoContainer.style.display = 'none';
+                
+                // Reset chat state
+                currentChatType = null;
+                isConnected = false;
+                updateConnectionStatus(false);
+                
+                // Reset inputs
+                if (messageInput) messageInput.value = '';
+                if (videoMessageInput) videoMessageInput.value = '';
+                
+                // Clear messages
+                chatMessages.innerHTML = '';
+                videoChatMessages.innerHTML = '';
+                
+                // Reset typing
+                isTyping = false;
+                if (typingTimeout) clearTimeout(typingTimeout);
+                
+                // Cleanup media
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                    localVideo.srcObject = null;
+                }
+                
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+                
+                // Reset WebSocket if needed
+                if (socket) {
+                    socket.close();
+                    socket = null;
+                }
+                
+                addSystemMessage('Welcome back to the home screen');
+                
+            } catch (error) {
+                console.error('Error showing home screen:', error);
+                handleError('Failed to show home screen', CONNECTION_STATUS.ERROR);
             }
-            if (dataChannel) {
-                dataChannel.close();
-                dataChannel = null;
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            disconnect();
-            connectWebSocket();
         }
 
         // Start text chat
@@ -1883,4 +1911,3 @@
     </script>
 </body>
 </html>
- 
