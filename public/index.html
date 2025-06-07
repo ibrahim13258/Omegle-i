@@ -1284,12 +1284,37 @@
 
         // Show terms modal
         function showTermsModal() {
-            termsModal.style.display = 'flex';
+            try {
+                termsModal.style.display = 'flex';
+                closeTermsModal.addEventListener('click', hideTermsModal);
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        hideTermsModal();
+                    }
+                });
+            } catch (error) {
+                console.error('Error showing terms modal:', error);
+                handleError('Failed to show terms modal', CONNECTION_STATUS.ERROR);
+            }
         }
 
         // Hide terms modal
         function hideTermsModal() {
-            termsModal.style.display = 'none';
+            try {
+                termsModal.classList.remove('show');
+                
+                // Remove event listeners
+                closeTermsModal.removeEventListener('click', hideTermsModal);
+                document.removeEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        hideTermsModal();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error hiding terms modal:', error);
+                handleError('Failed to hide terms modal', CONNECTION_STATUS.ERROR);
+            }
         }
 
         // Show home screen
@@ -1329,19 +1354,52 @@
         }
 
         // Start video chat
-        function startVideoChat() {
-            homeScreen.style.display = 'none';
-            chatContainer.style.display = 'none';
-            videoContainer.style.display = 'flex';
-            
-            // Clear previous messages
-            videoChatMessages.innerHTML = '';
-            
-            // Show permission prompt
-            videoPermissionPrompt.classList.add('show');
-            
-            // Connect to server
+        async function startVideoChat() {
+            try {
+                // Show loading state
+                homeScreen.style.display = 'none';
+                chatContainer.style.display = 'none';
+                videoContainer.style.display = 'flex';
+                
+                // Clear previous messages
+                videoChatMessages.innerHTML = '';
+                
+                // Show permission prompt
+                videoPermissionPrompt.classList.add('show');
+                
+                // Connect to server first
+                await connectWebSocket();
+                
+                // Request permissions
+                await requestPermissions();
+                
+                // Set up event listeners for video chat
+                videoMessageInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && videoMessageInput.value.trim()) {
+                        sendVideoMessage();
+                    }
                 });
+                
+                videoSendBtn.addEventListener('click', sendVideoMessage);
+                
+                muteBtn.addEventListener('click', toggleMute);
+                cameraBtn.addEventListener('click', toggleCamera);
+                endCallBtn.addEventListener('click', endVideoCall);
+                
+            } catch (error) {
+                console.error('Error starting video chat:', error);
+                handleError('Failed to start video chat', CONNECTION_STATUS.ERROR);
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = 'Failed to start video chat. Please try again.';
+                videoContainer.appendChild(errorDiv);
+                
+                // Show home screen
+                homeScreen.style.display = 'flex';
+                videoContainer.style.display = 'none';
+            }
         }
 
         // Toggle connection status
@@ -1825,3 +1883,4 @@
     </script>
 </body>
 </html>
+ 
