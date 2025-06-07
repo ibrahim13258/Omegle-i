@@ -592,40 +592,7 @@
             max-height: 200px;
             border-radius: 10px;
             margin-top: 5px;
-        }
-
-        /* Permission prompt */
-        .permission-prompt {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 100;
-            display: none;
-        }
-
-        .permission-prompt.show {
-            display: block;
-        }
-
-        .permission-btn {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background-color: #0073e6;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* File input hidden */
-        .hidden-file-input {
-            display: none;
-        }
+        }  
     </style>
 </head>
 <body>
@@ -1342,27 +1309,36 @@
         } 
      
         // Request camera/mic permissions
-          function requestPermissions() {
-              navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                  .then(stream => {
-                     localStream = stream;
-                     localVideo.srcObject = stream;
-                     videoPermissionPrompt.classList.remove('show');
-                     addVideoSystemMessage("Video chat started");
-                     initializeWebRTC(true);
-                 })
-                 .catch(err => {
-                   console.error("Error accessing media devices:", err);
-                   handleError("Could not access camera and microphone. Please check your permissions.");
-              });
-       }
+          function startVideoChat() {
+             homeScreen.style.display = 'none';
+             chatContainer.style.display = 'none';
+             videoContainer.style.display = 'flex';
+             videoChatMessages.innerHTML = '';
+
+             connectWebSocket(); // WebSocket से कनेक्ट करें
+
+             navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                   localStream = stream;
+                   localVideo.srcObject = stream;
+                   addVideoSystemMessage("Video chat started");
+                   initializeWebRTC(true); // WebRTC शुरू करें
+            })
+             .catch(err => {
+                 console.error("Error accessing media devices:", err);
+                 handleError("Could not access camera and microphone. Please check your permissions.");
+           });
+   }
+
+          
+           }
 
         // Toggle connection status
         function toggleConnection() {
-    if (isConnected && socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'disconnect' }));
-        socket.close(); // ✅ Properly disconnect
-        connectBtn.classList.add('disconnected');
+           if (isConnected && socket && socket.readyState === WebSocket.OPEN) {
+           socket.send(JSON.stringify({ type: 'disconnect' }));
+           socket.close(); // ✅ Properly disconnect
+           connectBtn.classList.add('disconnected');
         connectBtn.innerHTML = '<div class="connect-icon"></div><span>Disconnected</span>';
         isConnected = false;
     } else {
