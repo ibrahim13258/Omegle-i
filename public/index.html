@@ -1693,31 +1693,34 @@
         }
 
         // End video call
-        function endVideoCall() {
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            
-            if (dataChannel) {
-                dataChannel.close();
-                dataChannel = null;
-            }
-            
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-                localVideo.srcObject = null;
-            }
-            
-            remoteVideo.srcObject = null;
-            addVideoSystemMessage("Video chat ended");
-            
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: 'disconnect' }));
-            }
-        }
+         function endVideoCall() {
+             if (peerConnection) {
+                 peerConnection.close();
+                 peerConnection = null;
+       }
 
+       if (dataChannel) {
+           dataChannel.close();
+           dataChannel = null;
+      }
+
+      if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+          localStream = null;
+          localVideo.srcObject = null;
+     }
+
+     remoteVideo.srcObject = null;
+     videoPermissionPrompt.classList.remove('show'); // ✅ Fix #2
+     addVideoSystemMessage("Video chat ended");
+
+     if (socket && socket.readyState === WebSocket.OPEN) {
+         socket.send(JSON.stringify({ type: 'disconnect' }));
+         socket.close(); // ✅ Fix #1
+     }
+
+        videoChatMessages.innerHTML = ''; // 🎯 Optional: Reset UI}
+ }
         // Show message context menu
         function showMessageMenu(messageElement, x, y) {
             selectedMessage = messageElement;
