@@ -1342,24 +1342,20 @@
         } 
      
         // Request camera/mic permissions
-        function requestPermissions() {
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    localStream = stream;
-                    localVideo.srcObject = stream;
-                    videoPermissionPrompt.classList.remove('show');
-                    addVideoSystemMessage("Video chat started");
-                    
-                    // Initialize WebRTC after getting media
-                    if (isConnected) {
-                        initializeWebRTC(true);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error accessing media devices:", err);
-                    handleError("Could not access camera and microphone. Please check your permissions.");
-                });
-        }
+          function requestPermissions() {
+              navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                  .then(stream => {
+                     localStream = stream;
+                     localVideo.srcObject = stream;
+                     videoPermissionPrompt.classList.remove('show');
+                     addVideoSystemMessage("Video chat started");
+                     initializeWebRTC(true);
+                 })
+                 .catch(err => {
+                   console.error("Error accessing media devices:", err);
+                   handleError("Could not access camera and microphone. Please check your permissions.");
+              });
+       }
 
         // Toggle connection status
         function toggleConnection() {
