@@ -1312,6 +1312,7 @@
                 localStream = null;
             }
             disconnect();
+            connectWebSocket();
         }
 
         // Start text chat
@@ -1340,26 +1341,6 @@
             videoPermissionPrompt.classList.add('show');
             
             // Connect to server
-            connectWebSocket();
-        }
-
-        // Request camera/mic permissions
-        function requestPermissions() {
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    localStream = stream;
-                    localVideo.srcObject = stream;
-                    videoPermissionPrompt.classList.remove('show');
-                    addVideoSystemMessage("Video chat started");
-                    
-                    // Initialize WebRTC after getting media
-                    if (isConnected) {
-                        initializeWebRTC(true);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error accessing media devices:", err);
-                    handleError("Could not access camera and microphone. Please check your permissions.");
                 });
         }
 
@@ -1476,6 +1457,75 @@
                 );
             } else {
                 handleError("Geolocation is not supported by your browser");
+            }
+        }
+
+        // Request camera/mic permissions
+        async function requestPermissions() {
+            try {
+                // Check if we have existing permissions
+                const existingPermissions = await navigator.permissions.query({ name: 'camera' });
+                
+                if (existingPermissions.state === 'denied') {
+                    throw new Error('Camera access has been permanently denied');
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    }
+                });
+
+                // Clean up any existing media
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+
+                localStream = stream;
+                localVideo.srcObject = stream;
+                videoPermissionPrompt.classList.remove('show');
+                addVideoSystemMessage("Video chat started");
+
+                // Initialize WebRTC after getting media
+                if (isConnected) {
+                    await initializeWebRTC(true);
+                }
+
+                // Add event listeners for media errors
+                stream.getTracks().forEach(track => {
+                    track.onended = () => {
+                        handleError("Media stream ended unexpectedly", CONNECTION_STATUS.ERROR);
+                    };
+                });
+
+            } catch (err) {
+                console.error("Error accessing media devices:", err);
+                let errorMessage = "Failed to access camera and microphone";
+                
+                if (err.name === 'NotAllowedError') {
+                    errorMessage = "Camera and microphone access denied";
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage = "No camera or microphone found";
+                } else if (err.name === 'NotReadableError') {
+                    errorMessage = "Camera or microphone is in use by another application";
+                }
+
+                handleError(errorMessage, CONNECTION_STATUS.ERROR);
+                
+                // Show retry button
+                const retryBtn = document.createElement('button');
+                retryBtn.textContent = 'Try Again';
+                retryBtn.onclick = () => {
+                    requestPermissions();
+                };
+                videoPermissionPrompt.appendChild(retryBtn);
             }
         }
 
@@ -1612,22 +1662,40 @@
             typingDiv.textContent = 'Stranger is typing...';
             typingDiv.id = 'typingIndicator';
             chatMessages.appendChild(typingDiv);
-            scrollToBottom(chatMessages);
         }
 
         // Remove typing indicator
         function removeTypingIndicator() {
-            const typingDiv = document.getElementById('typingIndicator');
-            if (typingDiv) typingDiv.remove();
+            try {
+                const typingDiv = document.querySelector('.typing-indicator');
+                if (typingDiv) {
+                    typingDiv.remove();
+                }
+            } catch (error) {
+                console.error('Error removing typing indicator:', error);
+                handleError('Failed to remove typing indicator', CONNECTION_STATUS.ERROR);
+            }
         }
 
         // Add video user message
         function addVideoUserMessage(text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message user';
-            messageDiv.textContent = text;
-            
-            // Add long press event
+            try {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message user';
+                messageDiv.textContent = text;
+                
+                // Add long press event
+                messageDiv.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    showMessageMenu(messageDiv, e.clientX, e.clientY);
+                });
+                
+                videoChatMessages.appendChild(messageDiv);
+                scrollToBottom(videoChatMessages);
+            } catch (error) {
+                console.error('Error adding video user message:', error);
+                handleError('Failed to add video user message', CONNECTION_STATUS.ERROR);
+            }
             messageDiv.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 showMessageMenu(messageDiv, e.clientX, e.clientY);
@@ -1743,9 +1811,8 @@
         // Debounce function
         function debounce(func, wait) {
             let timeout;
-            return function() {
+            return function(...args) {
                 const context = this;
-                const args = arguments;
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
                     func.apply(context, args);
