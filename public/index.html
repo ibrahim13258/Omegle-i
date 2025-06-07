@@ -1365,17 +1365,19 @@
 
         // Toggle connection status
         function toggleConnection() {
-            if (isConnected) {
-                socket.send(JSON.stringify({ type: 'disconnect' }));
-                connectBtn.classList.add('disconnected');
-                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Disconnected</span>';
-            } else {
-                socket.send(JSON.stringify({ type: 'find' }));
-                connectBtn.classList.remove('disconnected');
-                connectBtn.innerHTML = '<div class="connect-icon"></div><span>Connect</span>';
-            }
-        }
-
+    if (isConnected && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'disconnect' }));
+        socket.close(); // ✅ Properly disconnect
+        connectBtn.classList.add('disconnected');
+        connectBtn.innerHTML = '<div class="connect-icon"></div><span>Disconnected</span>';
+        isConnected = false;
+    } else {
+        connectWebSocket(); // ✅ Properly reconnect
+        connectBtn.classList.remove('disconnected');
+        connectBtn.innerHTML = '<div class="connect-icon"></div><span>Connected</span>';
+        isConnected = true;
+    }
+}
         // Update connection status UI
         function updateConnectionStatus(connected) {
             isConnected = connected;
