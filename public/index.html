@@ -1302,7 +1302,6 @@
         function hideTermsModal() {
             try {
                 termsModal.classList.remove('show');
-                
                 // Remove event listeners
                 closeTermsModal.removeEventListener('click', hideTermsModal);
                 document.removeEventListener('keydown', (e) => {
@@ -1310,10 +1309,68 @@
                         hideTermsModal();
                     }
                 });
-                
             } catch (error) {
                 console.error('Error hiding terms modal:', error);
                 handleError('Failed to hide terms modal', CONNECTION_STATUS.ERROR);
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Home screen buttons
+            startChatBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    currentChatType = 'text';
+                    
+                    // Show terms modal
+                    showTermsModal();
+                    
+                } catch (error) {
+                    console.error('Error showing terms modal:', error);
+                    handleError('Failed to show terms modal', CONNECTION_STATUS.ERROR);
+                }
+            });
+            
+            startVideoBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    currentChatType = 'video';
+                    
+                    // Show terms modal
+                    showTermsModal();
+                    
+                } catch (error) {
+                    console.error('Error showing terms modal:', error);
+                    handleError('Failed to show terms modal', CONNECTION_STATUS.ERROR);
+                }
+            });
+            
+            // Terms modal buttons
+            agreeBtn.addEventListener('click', handleAgreeClick);
+            closeTermsModal.addEventListener('click', handleCancelClick);
+            
+            // Keyboard events
+            document.addEventListener('keydown', handleEscapeKey);
+        }
+
+        // Handle cancel button click
+        function handleCancelClick() {
+            try {
+                // Reset chat type
+                currentChatType = null;
+                
+                // Hide modal
+                hideTermsModal();
+                
+                // Show home screen
+                showHomeScreen();
+                
+            } catch (error) {
+                console.error('Error handling cancel:', error);
+                handleError('Failed to handle cancel', CONNECTION_STATUS.ERROR);
             }
         }
 
@@ -1392,7 +1449,7 @@
                 // Clear previous messages
                 videoChatMessages.innerHTML = '';
                 
-                // Show permission prompt
+                // Show permission prompt container
                 videoPermissionPrompt.classList.add('show');
                 
                 // Connect to server first
@@ -1421,7 +1478,10 @@
                 // Show error message
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error-message';
-                errorDiv.textContent = 'Failed to start video chat. Please try again.';
+                errorDiv.innerHTML = `
+                    <p>Failed to start video chat. Please try again.</p>
+                    <button class="retry-button" onclick="startVideoChat()">Try Again</button>
+                `;
                 videoContainer.appendChild(errorDiv);
                 
                 // Show home screen
