@@ -1332,17 +1332,15 @@
             homeScreen.style.display = 'none';
             chatContainer.style.display = 'none';
             videoContainer.style.display = 'flex';
-            
-            // Clear previous messages
-            videoChatMessages.innerHTML = '';
-            
-            // Show permission prompt
-            videoPermissionPrompt.classList.add('show');
-            
-            // Connect to server
-            connectWebSocket();
-        }
+        
 
+            videoChatMessages.innerHTML = '';
+            videoPermissionPrompt.classList.add('show');
+
+            connectWebSocket();
+            requestPermissions();
+        } 
+     
         // Request camera/mic permissions
         function requestPermissions() {
             navigator.mediaDevices.getUserMedia({ video: true, audio: true })
